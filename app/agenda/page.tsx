@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
-import { EventCard, EventItem, eventFilters, formatDate, officialAgendas } from "../components/content";
+import { EventCard, EventItem, eventFilters, formatDate, officialAgendas, symplaRegions } from "../components/content";
 
 export default function AgendaPage() {
   const [items, setItems] = useState<EventItem[]>([]);
@@ -32,9 +32,10 @@ export default function AgendaPage() {
         <div className="listing-heading"><div><p className="eyebrow">Agenda automática</p><h2 id="events-title">Eventos encontrados</h2></div><span>{updatedAt ? `Atualizada ${formatDate(updatedAt)}` : "Atualização a cada 6 horas"}</span></div>
         <div className="filter-row" role="group" aria-label="Filtrar eventos">{eventFilters.map((item) => <button type="button" className={filter === item ? "active" : ""} aria-pressed={filter === item} onClick={() => selectFilter(item)} key={item}>{item}</button>)}</div>
         {loading ? <div className="loading-state">Consultando as agendas oficiais…</div> : filtered.length ? <><div className="events-grid">{filtered.slice(0, visibleCount).map((event) => <EventCard event={event} key={`${event.title}-${event.startDate}-${event.venue}`} />)}</div>{filtered.length > visibleCount && <div className="load-more"><button type="button" onClick={() => setVisibleCount((count) => count + 12)}>Mostrar mais eventos</button></div>}</> : <div className="loading-state">Nenhum evento encontrado neste filtro.</div>}
-        {!loading && <div className="update-note" role="status"><span className="status-dot" /><strong>{activeSources.length} de {totalSources || activeSources.length} conectores automáticos ativos</strong><small>{activeSources.join(" · ") || "Conectores em nova tentativa"}.</small></div>}
+        {!loading && <div className="update-note" role="status"><span className="status-dot" /><strong>{activeSources.length} de {totalSources || activeSources.length} conectores automáticos ativos</strong><small>{activeSources.join(" · ") || "Conectores em nova tentativa"}. Sympla Santos e São Paulo permanecem como buscas manuais nos atalhos oficiais.</small></div>}
         <div className="agenda-heading"><p className="eyebrow">Agendas oficiais</p><h2>Continue procurando com segurança.</h2><p>Atalhos diretos para programações municipais, museus, Sesc e casas de eventos.</p></div>
         <div className="agenda-grid">{officialAgendas.map((agenda) => <a href={agenda.url} target="_blank" rel="noopener noreferrer" key={agenda.name}><span>{agenda.kind}</span><strong>{agenda.name}</strong><small>Abrir agenda oficial ↗</small></a>)}</div>
+        <div className="sympla-section"><p className="eyebrow">Busca manual na Sympla</p><h2>São Paulo e Baixada Santista.</h2><p>A API pública da Sympla só permite consultar eventos do proprietário do token. Por isso, estes atalhos abrem diretamente a busca oficial de cada cidade.</p><div className="sympla-grid">{symplaRegions.map((region) => <a href={region.url} target="_blank" rel="noopener noreferrer" key={region.name}>{region.name} ↗</a>)}</div></div>
       </section>
       <SiteFooter />
     </main>

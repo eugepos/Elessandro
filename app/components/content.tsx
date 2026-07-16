@@ -10,7 +10,6 @@ export const officialAgendas = [
   { name: "Tokio Marine Hall", kind: "Shows", url: "https://www.tokiomarinehall.com.br/shows/" },
   { name: "MIS São Paulo", kind: "Exposições", url: "https://mis-sp.org.br/" },
   { name: "Sesc São Paulo", kind: "Cultura", url: "https://www.sescsp.org.br/programacao/" },
-  { name: "Sympla Santos", kind: "Eventos", url: "https://www.sympla.com.br/eventos/santos-sp" },
   { name: "Ticketmaster", kind: "Grandes shows", url: "https://www.ticketmaster.com.br/" },
   { name: "Museu do Café", kind: "História", url: "https://www.museudocafe.org.br/" },
   { name: "Museu da Língua Portuguesa", kind: "Museu e literatura", url: "https://www.museudalinguaportuguesa.org.br/category/agenda/" },
@@ -19,6 +18,19 @@ export const officialAgendas = [
   { name: "Pinacoteca de São Paulo", kind: "Arte e exposições", url: "https://pinacoteca.org.br/programacao/" },
   { name: "Museu da Imigração", kind: "Museu e história", url: "https://museudaimigracao.org.br/imprensa" },
   { name: "Agenda Cultural de Santos", kind: "Baixada Santista", url: "https://www.santos.sp.gov.br/?q=portal/agenda-cultural" },
+];
+
+export const symplaRegions = [
+  { name: "São Paulo", url: "https://www.sympla.com.br/eventos/sao-paulo-sp" },
+  { name: "Santos", url: "https://www.sympla.com.br/eventos/santos-sp" },
+  { name: "São Vicente", url: "https://www.sympla.com.br/eventos/sao-vicente-sp" },
+  { name: "Praia Grande", url: "https://www.sympla.com.br/eventos/praia-grande-sp" },
+  { name: "Guarujá", url: "https://www.sympla.com.br/eventos/guaruja-sp" },
+  { name: "Cubatão", url: "https://www.sympla.com.br/eventos/cubatao-sp" },
+  { name: "Bertioga", url: "https://www.sympla.com.br/eventos/bertioga-sp" },
+  { name: "Mongaguá", url: "https://www.sympla.com.br/eventos/mongagua-sp" },
+  { name: "Itanhaém", url: "https://www.sympla.com.br/eventos/itanhaem-sp" },
+  { name: "Peruíbe", url: "https://www.sympla.com.br/eventos/peruibe-sp" },
 ];
 
 export function formatDate(value: string) {
@@ -53,13 +65,18 @@ export function NewsCard({ item }: { item: NewsItem }) {
 export function EventCard({ event }: { event: EventItem }) {
   return (
     <article className="event-card">
-      <div className="event-accent" aria-hidden="true" />
-      <div className="event-topline"><span className="event-type">{event.category}</span><span className="event-badge">{event.badge}</span></div>
-      <h3>{event.title}</h3>
-      {event.description && <p>{event.description}</p>}
-      <small>{event.displayDate || formatEventDate(event.startDate, event.endDate)} · {event.venue} · {event.city}</small>
-      {event.price && <span className="event-price">{event.price === "0" ? "Gratuito" : event.currency ? `${event.currency} ${event.price}` : event.price}</span>}
-      <a href={event.url} target="_blank" rel="noopener noreferrer">Ver no site oficial ↗</a>
+      <div className={`event-media ${event.image ? "has-image" : "image-failed"}`}>
+        {event.image && <img src={event.image} alt={`Imagem de divulgação do evento ${event.title}`} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(error) => error.currentTarget.parentElement?.classList.add("image-failed")} />}
+        <div className="event-fallback"><span>{event.category}</span><strong>Agenda cultural</strong></div>
+      </div>
+      <div className="event-card-body">
+        <div className="event-topline"><span className="event-type">{event.category}</span><span className="event-badge">{event.badge}</span></div>
+        <h3>{event.title}</h3>
+        {event.description && <p>{event.description}</p>}
+        <small>{event.displayDate || formatEventDate(event.startDate, event.endDate)} · {event.venue} · {event.city}</small>
+        {event.price && <span className="event-price">{event.price === "0" ? "Gratuito" : event.currency ? `${event.currency} ${event.price}` : event.price}</span>}
+        <a href={event.url} target="_blank" rel="noopener noreferrer">Ver no site oficial ↗</a>
+      </div>
     </article>
   );
 }
