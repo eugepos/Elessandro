@@ -47,11 +47,10 @@ const feeds: FeedSource[] = [
   { name: "OpenAI", url: "https://openai.com/news/rss.xml", category: "Tecnologia e IA", language: "en" },
   { name: "Google DeepMind", url: "https://deepmind.google/blog/rss.xml", category: "Tecnologia e IA", language: "en" },
   { name: "Agência de Notícias do IBGE", url: "https://agenciadenoticias.ibge.gov.br/agencia-rss", category: "Investimentos e economia", language: "pt" },
-  { name: "MEC", url: "https://news.google.com/rss/search?q=site%3Agov.br%2Fmec%2Fpt-br%2Fassuntos%2Fnoticias&hl=pt-BR&gl=BR&ceid=BR%3Apt-419", category: "Educação e servidores", language: "pt" },
-  { name: "FNDE", url: "https://news.google.com/rss/search?q=site%3Agov.br%2Ffnde%2Fpt-br%2Fassuntos%2Fnoticias&hl=pt-BR&gl=BR&ceid=BR%3Apt-419", category: "Educação e servidores", language: "pt" },
+  { name: "FNDE — Agência Gov", url: "https://agenciagov.ebc.com.br/rss.xml", category: "Educação e servidores", language: "pt", includeKeywords: ["FNDE", "Fundo Nacional de Desenvolvimento da Educação", "PNAE", "PDDE", "Fundeb", "alimentação escolar"] },
   { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "Sites do exterior", language: "en" },
-  { name: "UNESCO", url: "https://news.google.com/rss/search?q=site%3Aunesco.org%2Fen%2Farticles%20education&hl=en-US&gl=US&ceid=US%3Aen", category: "Sites do exterior", language: "en" },
-  { name: "Education International", url: "https://news.google.com/rss/search?q=site%3Aei-ie.org%2Fen%2Fitem&hl=en-US&gl=US&ceid=US%3Aen", category: "Sites do exterior", language: "en" },
+  { name: "UNESCO", url: "https://www.bing.com/news/search?q=site%3Aunesco.org%2Fen%2Farticles%20education&format=rss&setlang=en-us", category: "Sites do exterior", language: "en" },
+  { name: "Education International", url: "https://www.bing.com/news/search?q=site%3Aei-ie.org%2Fen%2Fitem&format=rss&setlang=en-us", category: "Sites do exterior", language: "en" },
 ];
 
 const municipalKeywords = ["servidor", "magistério", "educação", "educacional", "professor", "escola", "seduc", "concurso", "vida funcional", "aposentado", "pensionista", "ipresv", "caixa de saúde", "perícia", "folha de pagamento", "salário", "reajuste", "carreira"];
@@ -108,7 +107,7 @@ function parseFeed(xml: string, source: FeedSource) {
   return blocks.map((block) => {
     const atomLink = block.match(/<link[^>]+href=["']([^"']+)["']/i)?.[1] || "";
     const rawTitle = stripTags(field(block, ["title"]));
-    const title = source.url.includes("news.google.com")
+    const title = /news\.google\.com|bing\.com\/news\/search/i.test(source.url)
       ? rawTitle.replace(/\s+-\s+(?:www\.gov\.br|UNESCO|Education International)$/i, "").trim()
       : rawTitle;
     const rawDescription = stripTags(field(block, ["description", "summary", "content"]))
@@ -181,6 +180,27 @@ function parseCentralBankNews(payload: { conteudo?: CentralBankNews[] }): NewsEn
   })).filter((item) => item.title && item.url).slice(0, 5);
 }
 
+function parseAgencyGovNews(html: string, source: string, keywords: string[] = []): NewsEntry[] {
+  const blocks = html.match(/<li\b[^>]*class=["'][^"']*\bnoticia\b[^"']*\bpagina-noticias\b[^"']*["'][^>]*>[\s\S]*?<\/li>/gi) || [];
+  return blocks.map((block) => {
+    const url = decodeEntities(block.match(/<a\b[^>]*href=["']([^"']+)["']/i)?.[1] || "");
+    const title = stripTags(block.match(/<p\b[^>]*class=["'][^"']*\btitulo-noticia\b[^"']*["'][^>]*>([\s\S]*?)<\/p>/i)?.[1] || "");
+    const date = stripTags(block.match(/<div\b[^>]*class=["'][^"']*\bdata-noticia\b[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] || "");
+    const image = decodeEntities(block.match(/<img\b[^>]*class=["'][^"']*\bnoticia-img\b[^"']*["'][^>]*src=["']([^"']+)["']/i)?.[1] || "");
+    return {
+      title,
+      description: "",
+      url,
+      image: /^https?:\/\//i.test(image) ? image : undefined,
+      publishedAt: isoFromBrazilianDate(date),
+      source,
+      category: "Educação e servidores",
+      language: "pt" as const,
+    };
+  }).filter((item) => item.title && item.url)
+    .filter((item) => !keywords.length || matchesKeywords(item.title, keywords));
+}
+
 async function translateText(value: string) {
   try {
     const endpoint = new URL("https://translate.googleapis.com/translate_a/single");
@@ -220,6 +240,11 @@ export async function GET() {
       const response = await fetch("https://www.bcb.gov.br/api/servico/sitebcb/noticias", { headers: { "User-Agent": "ElessandroNoticias/1.0" }, cf: { cacheTtl: 900 } } as RequestInit);
       if (!response.ok) throw new Error(`Banco Central do Brasil: ${response.status}`);
       return parseCentralBankNews(await response.json() as { conteudo?: CentralBankNews[] });
+    } },
+    { name: "MEC — Agência Gov", load: async () => {
+      const response = await fetch("https://agenciagov.ebc.com.br/noticias/educacao", { headers: { "User-Agent": "ElessandroNoticias/1.0" }, cf: { cacheTtl: 900 } } as RequestInit);
+      if (!response.ok) throw new Error(`MEC — Agência Gov: ${response.status}`);
+      return parseAgencyGovNews(await response.text(), "MEC — Agência Gov").slice(0, 5);
     } },
   ];
   const results = await Promise.allSettled(loaders.map((source) => source.load()));
