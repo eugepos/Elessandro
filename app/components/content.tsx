@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export type NewsItem = { title: string; translatedTitle?: string | null; description: string; translatedDescription?: string | null; url: string; image?: string; publishedAt: string; source: string; category: string; language: "pt" | "en" };
 export type EventItem = { title: string; description: string; startDate: string; endDate?: string; displayDate?: string; url: string; image?: string; venue: string; city: string; price?: string; currency?: string; category: string; badge: string; source: string };
 
@@ -50,15 +52,112 @@ export function formatEventDate(value: string, endValue?: string) {
   return `${day} · ${time}`;
 }
 
+const browserTranslationCache = new Map<string, Promise<string | null>>();
+let activeTranslations = 0;
+const pendingTranslations: Array<() => void> = [];
+
+function withTranslationLimit<T>(task: () => Promise<T>) {
+  return new Promise<T>((resolve, reject) => {
+    const run = () => {
+      activeTranslations += 1;
+      task().then(resolve, reject).finally(() => {
+        activeTranslations -= 1;
+        pendingTranslations.shift()?.();
+      });
+    };
+    if (activeTranslations < 3) run();
+    else pendingTranslations.push(run);
+  });
+}
+
+async function requestBrowserTranslation(value: string) {
+  const storageKey = `elessandro-traducao:${value}`;
+  try {
+    const stored = window.localStorage.getItem(storageKey);
+    if (stored) return stored;
+  } catch { /* armazenamento pode estar bloqueado */ }
+
+  let translated: string | null = null;
+  try {
+    const endpoint = new URL("https://translate.googleapis.com/translate_a/single");
+    endpoint.searchParams.set("client", "gtx");
+    endpoint.searchParams.set("sl", "en");
+    endpoint.searchParams.set("tl", "pt");
+    endpoint.searchParams.set("dt", "t");
+    endpoint.searchParams.set("q", value);
+    const response = await fetch(endpoint);
+    if (response.ok) {
+      const data = await response.json() as unknown[][];
+      translated = Array.isArray(data?.[0]) ? data[0].map((part) => Array.isArray(part) ? part[0] : "").join("") : null;
+    }
+  } catch { /* usa o serviço alternativo abaixo */ }
+
+  if (!translated || translated === value) {
+    try {
+      const endpoint = new URL("https://api.mymemory.translated.net/get");
+      endpoint.searchParams.set("q", value);
+      endpoint.searchParams.set("langpair", "en|pt-BR");
+      const response = await fetch(endpoint);
+      if (response.ok) {
+        const data = await response.json() as { responseData?: { translatedText?: string } };
+        translated = data.responseData?.translatedText || null;
+      }
+    } catch { /* mantém o original em inglês */ }
+  }
+
+  if (!translated || translated === value) return null;
+  try { window.localStorage.setItem(storageKey, translated); } catch { /* cache opcional */ }
+  return translated;
+}
+
+function translateInBrowser(value: string) {
+  if (!value) return Promise.resolve(null);
+  const cached = browserTranslationCache.get(value);
+  if (cached) return cached;
+  const request = withTranslationLimit(() => requestBrowserTranslation(value));
+  browserTranslationCache.set(value, request);
+  return request;
+}
+
+function useAutomaticTranslation(item: NewsItem) {
+  const [title, setTitle] = useState(item.translatedTitle || null);
+  const [description, setDescription] = useState(item.translatedDescription || null);
+  const [translating, setTranslating] = useState(item.language === "en" && !item.translatedTitle);
+
+  useEffect(() => {
+    setTitle(item.translatedTitle || null);
+    setDescription(item.translatedDescription || null);
+    if (item.language !== "en" || item.translatedTitle) {
+      setTranslating(false);
+      return;
+    }
+    let current = true;
+    setTranslating(true);
+    Promise.all([translateInBrowser(item.title), translateInBrowser(item.description)])
+      .then(([translatedTitle, translatedDescription]) => {
+        if (!current) return;
+        setTitle(translatedTitle);
+        setDescription(translatedDescription);
+      })
+      .finally(() => { if (current) setTranslating(false); });
+    return () => { current = false; };
+  }, [item.title, item.description, item.language, item.translatedTitle, item.translatedDescription]);
+
+  return { title, description, translating };
+}
+
 export function NewsCard({ item }: { item: NewsItem }) {
+  const translation = useAutomaticTranslation(item);
+  const translatedTitle = item.translatedTitle || translation.title;
+  const translatedDescription = item.translatedDescription || translation.description;
   return (
     <article className="latest-card">
       {item.image && <div className="news-media"><img src={item.image} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(error) => error.currentTarget.parentElement?.classList.add("image-failed")} /></div>}
       <div className="news-card-content">
-        <div className="news-topline"><span>{item.category}</span>{item.language === "en" && <small>{item.translatedTitle ? "Tradução automática" : "Original em inglês"}</small>}</div>
-        <h3>{item.translatedTitle || item.title}</h3>
-        {item.translatedTitle && <p className="original-title">Original: {item.title}</p>}
-        {(item.translatedDescription || item.description) && <p>{item.translatedDescription || item.description}</p>}
+        <div className="news-topline"><span>{item.category}</span>{item.language === "en" && <small>{translatedTitle ? "Tradução automática" : translation.translating ? "Traduzindo…" : "Original em inglês"}</small>}</div>
+        <h3>{translatedTitle || item.title}</h3>
+        {translatedTitle && <p className="original-title">Original: {item.title}</p>}
+        {(translatedDescription || item.description) && <p>{translatedDescription || item.description}</p>}
         <footer><span>{item.source} · {formatDate(item.publishedAt)}</span><a href={item.url} target="_blank" rel="noopener noreferrer">Ler na fonte ↗</a></footer>
       </div>
     </article>
