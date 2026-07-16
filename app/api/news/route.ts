@@ -21,14 +21,19 @@ const feeds: FeedSource[] = [
   { name: "Google DeepMind", url: "https://deepmind.google/blog/rss.xml", category: "Tecnologia e IA", language: "en" },
 ];
 
-const namedEntities: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " ", aacute: "á", agrave: "à", acirc: "â", atilde: "ã", eacute: "é", ecirc: "ê", iacute: "í", oacute: "ó", ocirc: "ô", otilde: "õ", uacute: "ú", ccedil: "ç", Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú", Ccedil: "Ç" };
+const namedEntities: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " ", ldquo: '“', rdquo: '”', lsquo: "‘", rsquo: "’", ndash: "–", mdash: "—", hellip: "…", aacute: "á", agrave: "à", acirc: "â", atilde: "ã", eacute: "é", ecirc: "ê", iacute: "í", oacute: "ó", ocirc: "ô", otilde: "õ", uacute: "ú", ccedil: "ç", Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú", Ccedil: "Ç" };
 const decodeEntities = (value: string) => value
   .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
   .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)))
   .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
   .replace(/&([a-zA-Z]+);/g, (entity, name) => namedEntities[name] ?? entity);
 
-const stripTags = (value: string) => decodeEntities(value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+const stripTags = (value: string) => decodeEntities(value)
+  .replace(/<[^>]+>/g, " ")
+  .replace(/\s+/g, " ")
+  .replace(/^[\s"'“”‘’]+|[\s"'“”‘’]+$/g, "")
+  .replace(/(R\$\s*\d+),\s+(\d)/g, "$1,$2")
+  .trim();
 
 function field(block: string, names: string[]) {
   for (const name of names) {
@@ -93,7 +98,7 @@ export async function GET() {
   const activeSources = new Set(unique.map((item) => item.source)).size;
   const unavailableSources = feeds.length - activeSources;
 
-  return Response.json({ items: translatedItems, activeSources, unavailableSources, updatedAt: new Date().toISOString() }, {
+  return Response.json({ items: translatedItems, activeSources, totalSources: feeds.length, unavailableSources, updatedAt: new Date().toISOString() }, {
     headers: { "Cache-Control": "public, max-age=300, s-maxage=900" },
   });
 }

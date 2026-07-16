@@ -3,6 +3,7 @@ type EventItem = {
   description: string;
   startDate: string;
   endDate: string;
+  displayDate?: string;
   url: string;
   image: string;
   venue: string;
@@ -30,10 +31,14 @@ const decode = (value: string) => value
   .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
   .replace(/&#x([\da-f]+);/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)))
   .replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'")
+  .replace(/&ldquo;/g, "“").replace(/&rdquo;/g, "”").replace(/&lsquo;/g, "‘").replace(/&rsquo;/g, "’")
+  .replace(/&ndash;/g, "–").replace(/&mdash;/g, "—").replace(/&hellip;/g, "…")
   .replace(/&nbsp;/g, " ").replace(/&ccedil;/g, "ç").replace(/&atilde;/g, "ã")
   .replace(/&aacute;/g, "á").replace(/&eacute;/g, "é").replace(/&iacute;/g, "í")
-  .replace(/&oacute;/g, "ó").replace(/&uacute;/g, "ú");
-const strip = (value: string) => decode(value).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  .replace(/&oacute;/g, "ó").replace(/&uacute;/g, "ú")
+  .replace(/&Aacute;/g, "Á").replace(/&Eacute;/g, "É").replace(/&Iacute;/g, "Í")
+  .replace(/&Oacute;/g, "Ó").replace(/&Uacute;/g, "Ú").replace(/&Ccedil;/g, "Ç");
+const strip = (value: string) => decode(value).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").replace(/^[\s"'“”‘’]+|[\s"'“”‘’]+$/g, "").trim();
 const absoluteUrl = (value: string, origin: string) => {
   try { return new URL(value, origin).toString(); } catch { return origin; }
 };
@@ -232,8 +237,160 @@ async function fetchMuseum(): Promise<ConnectorResult> {
   return { name: "Museu do Café", events: Array.from(new Map(events.map((event) => [`${event.title}|${event.startDate}`, event])).values()).slice(0, 24) };
 }
 
+type MuseumGuideSource = {
+  name: string;
+  city: string;
+  endpoint: string;
+};
+
+const museumGuideSources: MuseumGuideSource[] = [
+  {
+    name: "Museu da Língua Portuguesa",
+    city: "São Paulo",
+    endpoint: "https://www.museudalinguaportuguesa.org.br/wp-json/wp/v2/posts?categories=1&per_page=6&_fields=date,link,title,excerpt",
+  },
+  {
+    name: "Museu do Futebol",
+    city: "São Paulo",
+    endpoint: "https://museudofutebol.org.br/wp-json/wp/v2/posts?search=programa%C3%A7%C3%A3o&per_page=8&_fields=date,link,title,excerpt",
+  },
+  {
+    name: "Museu do Ipiranga",
+    city: "São Paulo",
+    endpoint: "https://museudoipiranga.org.br/wp-json/wp/v2/posts?search=programa%C3%A7%C3%A3o&per_page=6&_fields=date,link,title,excerpt",
+  },
+];
+
+const officialCulturePages = [
+  {
+    name: "Pinacoteca de São Paulo",
+    city: "São Paulo",
+    url: "https://pinacoteca.org.br/programacao/",
+    title: "Programação da Pinacoteca",
+    description: "Exposições, oficinas, visitas e atividades publicadas na programação oficial da Pinacoteca.",
+  },
+  {
+    name: "Museu da Imigração",
+    city: "São Paulo",
+    url: "https://museudaimigracao.org.br/imprensa",
+    title: "Novidades do Museu da Imigração",
+    description: "Programações especiais, oficinas, visitas educativas e atividades divulgadas oficialmente pelo museu.",
+  },
+  {
+    name: "Agenda Cultural de Santos",
+    city: "Santos",
+    url: "https://www.santos.sp.gov.br/?q=portal/agenda-cultural",
+    title: "Agenda cultural de Santos",
+    description: "Cinema, música, dança, exposições, museus e atividades divulgadas pela Prefeitura de Santos.",
+  },
+];
+
+const guidePublishedLabel = (value: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Agenda oficial atualizada automaticamente"
+    : `Agenda publicada em ${new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(date)}`;
+};
+
+function guideEndDate(value: string, publishedAt: string) {
+  const months: Record<string, number> = { janeiro: 0, fevereiro: 1, março: 2, marco: 2, abril: 3, maio: 4, junho: 5, julho: 6, agosto: 7, setembro: 8, outubro: 9, novembro: 10, dezembro: 11 };
+  const published = new Date(publishedAt);
+  const year = Number(value.match(/20\d{2}/)?.[0] || (Number.isNaN(published.getTime()) ? new Date().getFullYear() : published.getFullYear()));
+  const dates: Date[] = [];
+  for (const match of value.toLocaleLowerCase("pt-BR").matchAll(/(\d{1,2})(?:\s*(?:a|e|–|-)\s*(\d{1,2}))?\s+de\s+(janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/g)) {
+    const day = Number(match[2] || match[1]);
+    dates.push(new Date(`${year}-${String(months[match[3]] + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}T23:59:00-03:00`));
+  }
+  const explicit = dates.filter((date) => !Number.isNaN(date.getTime())).sort((a, b) => b.getTime() - a.getTime())[0];
+  if (explicit) return { date: explicit, explicit: true };
+  const fallbackStart = Number.isNaN(published.getTime()) ? new Date() : published;
+  return { date: new Date(fallbackStart.getTime() + 1000 * 60 * 60 * 24 * 45), explicit: false };
+}
+
+function normalizeMuseumGuide(value: unknown, source: MuseumGuideSource, now: Date): EventItem | null {
+  const post = asRecord(value);
+  const title = strip(asText(asRecord(post.title).rendered));
+  const description = strip(asText(asRecord(post.excerpt).rendered)).slice(0, 220);
+  const url = asText(post.link);
+  const publishedAt = asText(post.date);
+  const searchable = `${title} ${description}`.toLocaleLowerCase("pt-BR");
+  const isProgramming = /programa[cç][aã]o|f[eé]rias|exposi[cç][aã]o|oficina|visita|festival|agenda|atividade|show|cinema/.test(searchable);
+  const isAdministrative = /edital|credenciad|resultado|licita[cç][aã]o|vaga|processo seletivo/.test(searchable);
+  const guideEnd = guideEndDate(`${title} ${description}`, publishedAt);
+  if (!title || !url || !isProgramming || isAdministrative || guideEnd.date.getTime() < now.getTime() - 86400000) return null;
+  return {
+    title,
+    description: description || `Programação publicada pelo ${source.name}.`,
+    startDate: publishedAt || now.toISOString(),
+    endDate: guideEnd.date.toISOString(),
+    displayDate: guideEnd.explicit
+      ? `Programação até ${new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(guideEnd.date)}`
+      : guidePublishedLabel(publishedAt),
+    url,
+    image: "",
+    venue: source.name,
+    city: source.city,
+    price: "",
+    currency: "",
+    category: "Museus e História",
+    badge: "Agenda do museu",
+    source: source.name,
+  };
+}
+
+async function fetchExpandedCulture(): Promise<ConnectorResult> {
+  const now = new Date();
+  const wpResults = await Promise.allSettled(museumGuideSources.map(async (source) => {
+    const response = await fetch(source.endpoint, requestOptions);
+    if (!response.ok) throw new Error(`${source.name}: ${response.status}`);
+    return asArray(await response.json())
+      .map((post) => normalizeMuseumGuide(post, source, now))
+      .filter((event): event is EventItem => event !== null)
+      .slice(0, 2);
+  }));
+
+  const pageResults = await Promise.allSettled(officialCulturePages.map(async (source) => {
+    const response = await fetch(source.url, requestOptions);
+    if (!response.ok) throw new Error(`${source.name}: ${response.status}`);
+    return {
+      title: source.title,
+      description: source.description,
+      startDate: now.toISOString(),
+      endDate: new Date(now.getTime() + 1000 * 60 * 60 * 48).toISOString(),
+      displayDate: "Agenda oficial consultada automaticamente hoje",
+      url: source.url,
+      image: "",
+      venue: source.name,
+      city: source.city,
+      price: "",
+      currency: "",
+      category: "Museus e História",
+      badge: "Agenda oficial",
+      source: source.name,
+    } satisfies EventItem;
+  }));
+
+  const events = [
+    ...wpResults.flatMap((result) => result.status === "fulfilled" ? result.value : []),
+    ...pageResults.flatMap((result) => result.status === "fulfilled" ? [result.value] : []),
+  ];
+  if (!events.length) throw new Error("Museus e agenda de Santos: fontes indisponíveis");
+  return { name: "Museus e agenda de Santos", events };
+}
+
 function balanced(events: EventItem[]) {
-  const sourceOrder = ["Museu do Café", "Sesc São Paulo", "MIS São Paulo", "Tokio Marine Hall"];
+  const sourceOrder = [
+    "Museu do Café",
+    "Sesc São Paulo",
+    "MIS São Paulo",
+    "Tokio Marine Hall",
+    "Museu da Língua Portuguesa",
+    "Museu do Futebol",
+    "Museu do Ipiranga",
+    "Pinacoteca de São Paulo",
+    "Museu da Imigração",
+    "Agenda Cultural de Santos",
+  ];
   const queues = sourceOrder.map((source) => events.filter((event) => event.source === source).sort((a, b) => Date.parse(a.startDate) - Date.parse(b.startDate)));
   const output: EventItem[] = [];
   while (queues.some((queue) => queue.length) && output.length < 48) {
@@ -247,12 +404,12 @@ function balanced(events: EventItem[]) {
 }
 
 export async function GET() {
-  const connectors = [fetchTokioMarine, fetchMis, fetchSesc, fetchMuseum];
+  const connectors = [fetchTokioMarine, fetchMis, fetchSesc, fetchMuseum, fetchExpandedCulture];
   const results = await Promise.allSettled(connectors.map((connector) => connector()));
   const now = Date.now();
   const isCurrent = (event: EventItem) => (Date.parse(event.endDate || event.startDate) || 0) >= now - 86400000;
   const reports = results.map((result, index) => {
-    const fallbackName = ["Tokio Marine Hall", "MIS São Paulo", "Sesc São Paulo", "Museu do Café"][index];
+    const fallbackName = ["Tokio Marine Hall", "MIS São Paulo", "Sesc São Paulo", "Museu do Café", "Museus e agenda de Santos"][index];
     const eventCount = result.status === "fulfilled" ? result.value.events.filter(isCurrent).length : 0;
     return result.status === "fulfilled"
       ? { name: result.value.name, status: eventCount ? "active" : "empty", eventCount }

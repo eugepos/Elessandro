@@ -90,21 +90,21 @@
   </header>
   <div class="painel">
     <div class="zonas">
-      <div class="zona" id="zonaEnv">
+      <div class="zona" id="zonaEnv" role="button" tabindex="0" aria-describedby="stEnv">
         <h2>1 — Lista ENVIADA (sindicato)</h2>
         <div class="dica">Excel, Word, CSV ou PDF com colunas: Holerite/Matrícula, Nome, Valor</div>
         <div class="dica">Clique ou arraste o arquivo aqui</div>
-        <div class="status" id="stEnv"></div>
-        <select class="abas" id="abasEnv" style="display:none" onclick="event.stopPropagation()"></select>
-        <input type="file" id="fileEnv" accept=".xlsx,.xls,.csv,.docx,.pdf">
+        <div class="status" id="stEnv" role="status" aria-live="polite"></div>
+        <select class="abas" id="abasEnv" aria-label="Planilha da lista enviada" style="display:none" onclick="event.stopPropagation()"></select>
+        <input type="file" id="fileEnv" aria-label="Selecionar arquivo da lista enviada" accept=".xlsx,.xls,.csv,.docx,.pdf">
       </div>
-      <div class="zona" id="zonaRet">
+      <div class="zona" id="zonaRet" role="button" tabindex="0" aria-describedby="stRet">
         <h2>2 — RETORNO (Prefeitura / IPRESV)</h2>
         <div class="dica">PDF do Server Consignado, PDF do IPRESV, Excel ou Word</div>
         <div class="dica">Clique ou arraste o arquivo aqui</div>
-        <div class="status" id="stRet"></div>
-        <select class="abas" id="abasRet" style="display:none" onclick="event.stopPropagation()"></select>
-        <input type="file" id="fileRet" accept=".xlsx,.xls,.csv,.docx,.pdf">
+        <div class="status" id="stRet" role="status" aria-live="polite"></div>
+        <select class="abas" id="abasRet" aria-label="Planilha do retorno" style="display:none" onclick="event.stopPropagation()"></select>
+        <input type="file" id="fileRet" aria-label="Selecionar arquivo de retorno da Prefeitura ou IPRESV" accept=".xlsx,.xls,.csv,.docx,.pdf">
       </div>
     </div>
     <div class="acoes">
@@ -309,6 +309,12 @@ function ligarZona(idZona, idFile, idStatus, idAbas, lado) {
   const zona = document.getElementById(idZona), inp = document.getElementById(idFile),
         st = document.getElementById(idStatus), sel = document.getElementById(idAbas);
   zona.addEventListener('click', e => { if (e.target !== sel) inp.click(); });
+  zona.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target !== sel) {
+      e.preventDefault();
+      inp.click();
+    }
+  });
   zona.addEventListener('dragover', e => { e.preventDefault(); zona.classList.add('arrasto'); });
   zona.addEventListener('dragleave', () => zona.classList.remove('arrasto'));
   zona.addEventListener('drop', e => { e.preventDefault(); zona.classList.remove('arrasto'); if (e.dataTransfer.files[0]) carregar(e.dataTransfer.files[0]); });
