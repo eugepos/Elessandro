@@ -15,12 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://elessandro.com.br"),
   title: "Elessandro Eugênio — Meu espaço",
-  description: "Meu espaço de ferramentas para o trabalho, notícias selecionadas e agenda cultural de São Vicente, Baixada Santista e São Paulo.",
+  description: "Meu espaço de ferramentas para o trabalho, com páginas organizadas de notícias e agenda cultural de São Vicente, Baixada Santista e São Paulo.",
   alternates: { canonical: "/" },
   authors: [{ name: "Elessandro Eugênio", url: "https://elessandro.com.br" }],
   openGraph: {
     title: "Elessandro Eugênio — Meu espaço",
-    description: "Ferramentas para o trabalho, notícias selecionadas e agenda cultural organizada em um só lugar.",
+    description: "Ferramentas para o trabalho, notícias selecionadas e agenda cultural em páginas organizadas.",
     url: "https://elessandro.com.br",
     siteName: "Elessandro Eugênio",
     locale: "pt_BR",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Elessandro Eugênio — Meu espaço",
-    description: "Ferramentas para o trabalho, notícias selecionadas e agenda cultural organizada em um só lugar.",
+    description: "Ferramentas para o trabalho, notícias selecionadas e agenda cultural em páginas organizadas.",
     images: ["/og.png"],
   },
   robots: { index: true, follow: true },

@@ -38,7 +38,12 @@ const decode = (value: string) => value
   .replace(/&oacute;/g, "ó").replace(/&uacute;/g, "ú")
   .replace(/&Aacute;/g, "Á").replace(/&Eacute;/g, "É").replace(/&Iacute;/g, "Í")
   .replace(/&Oacute;/g, "Ó").replace(/&Uacute;/g, "Ú").replace(/&Ccedil;/g, "Ç");
-const strip = (value: string) => decode(value).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").replace(/^[\s"'“”‘’]+|[\s"'“”‘’]+$/g, "").trim();
+const strip = (value: string) => decode(value)
+  .replace(/\\?\[\/?vc_[^\]]*\]/gi, " ")
+  .replace(/<[^>]+>/g, " ")
+  .replace(/\s+/g, " ")
+  .replace(/^[\s"'“”‘’]+|[\s"'“”‘’]+$/g, "")
+  .trim();
 const absoluteUrl = (value: string, origin: string) => {
   try { return new URL(value, origin).toString(); } catch { return origin; }
 };
