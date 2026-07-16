@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de descongelamento | Elessandro</title>
+<style>
+  :root{
+    --azul:#1F4E79; --azul-claro:#DDEBF7; --verde:#2e7d32; --verde-claro:#E2EFDA;
+    --laranja:#843C0C; --laranja-claro:#FBE5D6; --cinza:#f4f4f4; --borda:#d0d0d0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:Arial,Helvetica,sans-serif; background:#eef1f5; color:#222; padding:12px; font-size:15px;}
+  .wrap{max-width:760px; margin:0 auto;}
+  header{background:var(--azul); color:#fff; border-radius:10px 10px 0 0; padding:16px; text-align:center;}
+  header h1{font-size:1.15rem;}
+  header p{font-size:.78rem; opacity:.9; margin-top:6px; line-height:1.4;}
+  .card{background:#fff; border:1px solid var(--borda); border-top:none; padding:16px;}
+  .card:last-child{border-radius:0 0 10px 10px;}
+  h2{font-size:.95rem; color:var(--azul); margin-bottom:10px; border-left:4px solid var(--azul); padding-left:8px;}
+  h2.apo{color:var(--laranja); border-color:var(--laranja);}
+  label{display:block; font-size:.82rem; font-weight:bold; margin:10px 0 4px;}
+  label small{font-weight:normal; color:#777;}
+  input{width:100%; padding:10px; border:1px solid var(--borda); border-radius:6px; font-size:1rem; background:#FFFDE7;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  @media(max-width:520px){.grid{grid-template-columns:1fr;}}
+  table{width:100%; border-collapse:collapse; font-size:.8rem; margin-top:8px;}
+  th,td{border:1px solid var(--borda); padding:7px 6px; text-align:center;}
+  th{background:var(--azul-claro);}
+  td:first-child{text-align:left;}
+  tr.destaque{background:var(--verde-claro); font-weight:bold;}
+  .apo th{background:var(--laranja-claro);}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+  .chip{background:var(--cinza); border:1px solid var(--borda); border-radius:8px; padding:8px 12px; font-size:.78rem; flex:1; min-width:140px; text-align:center;}
+  .chip b{display:block; font-size:1.05rem; color:var(--azul);}
+  .marco{background:var(--verde-claro); border:1px solid #b6d7a8; border-radius:8px; padding:10px 12px; margin-top:8px; font-size:.85rem;}
+  .marco b{color:var(--verde);}
+  .resultado{border-radius:8px; padding:12px; margin-top:10px; font-size:.88rem; font-weight:bold; text-align:center;}
+  .sim{background:var(--verde-claro); color:var(--verde); border:1px solid #b6d7a8;}
+  .nao{background:var(--cinza); color:#555; border:1px solid var(--borda);}
+  .aviso{font-size:.72rem; color:#a33; margin-top:10px; line-height:1.4;}
+  .ref{font-size:.75rem; color:#666; line-height:1.6; margin-top:6px;}
+  footer{text-align:center; font-size:.7rem; color:#888; padding:14px 0;}
+  .oculto{display:none;}
+  .sitebar{max-width:760px;margin:0 auto 12px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .sitebrand{color:var(--azul);font-size:18px;font-weight:750;text-decoration:none;letter-spacing:-.03em;}
+  .sitebrand small{display:block;color:#718096;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
+  .backlink{color:var(--azul);font-size:13px;font-weight:650;text-decoration:none;padding:8px 12px;border:1px solid #c9d5e1;border-radius:8px;background:#fff;}
+  .backlink:hover{background:var(--azul-claro);}
+  @media(max-width:520px){.sitebar{align-items:flex-start}.backlink{font-size:12px}}
+</style>
+</head>
+<body>
+<nav class="sitebar" aria-label="Navegação da ferramenta">
+  <a class="sitebrand" href="/"><span>Elessandro</span><small>ferramentas & notícias</small></a>
+  <a class="backlink" href="/">← Voltar ao início</a>
+</nav>
+<div class="wrap">
+  <header>
+    <h1>Descongelamento do Tempo da Pandemia<br>Magistério — São Vicente/SP</h1>
+    <p>LC federal 226/2026 + legislação municipal aplicável: 583 dias congelados (28/05/2020 a 31/12/2021).<br>
+    Devolução: 300 dias em 01/07/2026 + 283 dias em 01/01/2027.</p>
+  </header>
+
+  <div class="card">
+    <h2>1. Seus dados</h2>
+    <div class="grid">
+      <div>
+        <label>Data de admissão</label>
+        <input type="date" id="adm" value="2011-02-01">
+      </div>
+      <div>
+        <label>Afastamentos sem efetivo exercício <small>(total em dias — ex.: licença sem vencimentos)</small></label>
+        <input type="number" id="afast" value="0" min="0">
+      </div>
+    </div>
+    <label>Data de aposentadoria <small>(deixe vazio se você está na ativa)</small></label>
+    <input type="date" id="apos">
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="card" id="secAtivo">
+    <h2>2. Situação do servidor ativo</h2>
+    <table id="tabCenarios">
+      <thead><tr><th>Cenário</th><th>Tempo de serviço</th><th>Triênio</th><th>Letra</th><th>Sexta-parte</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <h2 style="margin-top:18px;">3. Linha do tempo dos próximos benefícios</h2>
+    <table id="tabTimeline">
+      <thead><tr><th>Data prevista</th><th>Anos de serviço</th><th>Benefício</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="ref" id="notaTimeline"></p>
+  </div>
+
+  <div class="card oculto" id="secApo">
+    <h2 class="apo">Aposentado — simulação de revisão</h2>
+    <table class="apo" id="tabApo">
+      <thead><tr><th>Cenário</th><th>Tempo na aposentadoria</th><th>Triênio</th><th>Letra</th><th>Sexta-parte</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div id="revisao"></div>
+  </div>
+
+  <div class="card">
+    <h2>Referência rápida</h2>
+    <p class="ref">
+      <b>Triênio:</b> +3% a cada 3 anos de serviço.<br>
+      <b>Letra (grau):</b> G1 (0–4 anos, 0%) · G2 (5–9, 5%) · G3 (10–14, 10%) · G4 (15–19, 15%) · G5 (20+, 20%).<br>
+      <b>Sexta-parte:</b> 1/6 dos vencimentos aos 20 anos de serviço público.
+    </p>
+  </div>
+
+  <footer>Ferramenta para simples conferência — nada supera a informação oficial do RH ou de um especialista.</footer>
+</div>
+
+<script>
+const FREEZE_INI = new Date(2020,4,28);   // 28/05/2020
+const FREEZE_FIM = new Date(2021,11,31);  // 31/12/2021
+const DEV1 = new Date(2026,6,1);          // 01/07/2026
+const DEV2 = new Date(2027,0,1);          // 01/01/2027
+const DEV1_DIAS = 300;
+const DIA = 86400000;
+
+const hoje = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
+const addDias = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const addMeses = (d,n) => {
+  const alvo = new Date(d.getFullYear(), d.getMonth()+n, 1);
+  const ultimo = new Date(alvo.getFullYear(), alvo.getMonth()+1, 0).getDate();
+  return new Date(alvo.getFullYear(), alvo.getMonth(), Math.min(d.getDate(), ultimo));
+};
+const fmt = d => d.toLocaleDateString('pt-BR');
+const maxD = (a,b) => a>b?a:b;
+const minD = (a,b) => a<b?a:b;
+
+// DATEDIF "Y" e "YM"
+function tempoYM(ini, fim){
+  if (ini > fim) return {anos:0, meses:0, txt:'—'};
+  let anos = fim.getFullYear() - ini.getFullYear();
+  let meses = fim.getMonth() - ini.getMonth();
+  if (fim.getDate() < ini.getDate()) meses--;
+  if (meses < 0){ anos--; meses += 12; }
+  return {anos, meses, txt: anos + ' anos e ' + meses + (meses===1?' mês':' meses')};
+}
+const trienio = a => Math.floor(a/3)*3;
+const letraG  = a => Math.min(Math.floor(a/5)+1, 5);
+const letraP  = a => Math.min(Math.floor(a/5), 4)*5;
+const sexta   = a => a >= 20;
+
+function diasCongelados(adm, base){
+  const d = Math.round((minD(FREEZE_FIM, base) - maxD(FREEZE_INI, adm))/DIA) + 1;
+  return Math.max(0, d);
+}
+function devolvidos(congelados, quando){
+  if (quando >= DEV2) return congelados;
+  if (quando >= DEV1) return Math.min(DEV1_DIAS, congelados);
+  return 0;
+}
+// data em que atinge N anos efetivos (com devolução em duas etapas)
+function dataMarco(adm, afast, congelados, N){
+  const base = addDias(addMeses(adm, N*12), afast);
+  const c1 = addDias(base, congelados);
+  if (c1 < DEV1) return c1;
+  const c2 = addDias(base, congelados - Math.min(DEV1_DIAS, congelados));
+  if (c2 < DEV2) return maxD(c2, DEV1);
+  return maxD(base, DEV2);
+}
+function linha(nome, ini, fim, destaque){
+  const t = tempoYM(ini, fim), a = t.anos;
+  return `<tr class="${destaque?'destaque':''}"><td>${nome}</td><td>${t.txt}</td>
+    <td>${trienio(a)}%</td><td>G${letraG(a)} (${letraP(a)}%)</td><td>${sexta(a)?'Sim':'Ainda não'}</td></tr>`;
+}
+
+function calcular(){
+  const admV = document.getElementById('adm').value;
+  if (!admV) return;
+  const [ay,am,ad] = admV.split('-').map(Number);
+  const adm = new Date(ay, am-1, ad);
+  const afast = Math.max(0, parseInt(document.getElementById('afast').value)||0);
+  const aposV = document.getElementById('apos').value;
+  let apos = null;
+  if (aposV){ const [y,m,d] = aposV.split('-').map(Number); apos = new Date(y, m-1, d); }
+
+  const H = hoje();
+  const base = apos || H;
+  const cong = diasCongelados(adm, base);
+  const dev  = devolvidos(cong, H);
+  const rest = cong - dev;
+
+  document.getElementById('chips').innerHTML =
+    `<div class="chip">Dias congelados<b>${cong}</b></div>
+     <div class="chip">Já devolvidos<b>${dev}</b></div>
+     <div class="chip">Faltam devolver<b>${rest}</b></div>`;
+
+  const admAf = addDias(adm, afast);
+
+  // ativo
+  document.getElementById('secAtivo').classList.toggle('oculto', !!apos);
+  document.getElementById('secApo').classList.toggle('oculto', !apos);
+
+  if (!apos){
+    const tb = document.querySelector('#tabCenarios tbody');
+    tb.innerHTML =
+      linha('Se nunca tivesse congelado (hoje)', admAf, H) +
+      linha('Congelado, sem devolução (hoje)', addDias(admAf, cong), H) +
+      linha('Em 01/07/2026 — 300 dias devolvidos', addDias(admAf, cong - Math.min(DEV1_DIAS,cong)), DEV1) +
+      linha('HOJE — situação atual', addDias(admAf, rest), H, true) +
+      linha('A partir de 01/01/2027 — recontagem completa', admAf, DEV2, true);
+
+    const aAtual = tempoYM(addDias(admAf, rest), H).anos;
+    const eventos = [];
+    for (let N = aAtual+1; N <= 42; N++){
+      const rotulos = [];
+      if (N % 3 === 0) rotulos.push(`📅 Triênio ${N}%`);
+      if (N % 5 === 0 && N <= 20) rotulos.push(N === 20 ? '🔤 Letra G5 (20%) — teto' : `🔤 Letra G${N/5+1} (${N}%)`);
+      if (N === 20) rotulos.push('⭐ Sexta-parte (1/6 dos vencimentos)');
+      if (rotulos.length) eventos.push({N, data: dataMarco(adm, afast, cong, N), rotulo: rotulos.join('<br>')});
+    }
+    const limite = addMeses(H, 60); // mostra só os próximos 5 anos
+    const proximos = eventos.filter(e => e.data <= limite);
+    if (!proximos.length && eventos.length) proximos.push(eventos[0]); // garante ao menos o próximo marco
+    document.querySelector('#tabTimeline tbody').innerHTML = proximos.map((e,i) =>
+      `<tr class="${i===0?'destaque':''}"><td style="text-align:center">${fmt(e.data)}</td><td>${e.N} anos</td><td style="text-align:left">${e.rotulo}${i===0?' <b>← próximo!</b>':''}</td></tr>`
+    ).join('');
+    document.getElementById('notaTimeline').innerHTML =
+      (aAtual >= 20 ? 'Você já tem a sexta-parte e está no G5 (teto da letra). ' : '') +
+      'Mostrando os benefícios dos próximos 5 anos. Datas já consideram a devolução em duas etapas (300 dias em 01/07/2026 + 283 dias em 01/01/2027) e os afastamentos informados.';
+  } else {
+    const tb = document.querySelector('#tabApo tbody');
+    tb.innerHTML =
+      linha('Como foi contado (congelado)', addDias(admAf, cong), apos) +
+      linha('Com recontagem total dos ' + cong + ' dias', admAf, apos, true);
+    const a1 = tempoYM(addDias(admAf, cong), apos).anos;
+    const a2 = tempoYM(admAf, apos).anos;
+    const muda = trienio(a1)!==trienio(a2) || letraG(a1)!==letraG(a2) || sexta(a1)!==sexta(a2);
+    document.getElementById('revisao').innerHTML = muda
+      ? `<div class="resultado sim">✅ POSSÍVEL REVISÃO — a recontagem muda ${[
+            trienio(a1)!==trienio(a2)?`o triênio (${trienio(a1)}% → ${trienio(a2)}%)`:null,
+            letraG(a1)!==letraG(a2)?`a letra (G${letraG(a1)} → G${letraG(a2)})`:null,
+            sexta(a1)!==sexta(a2)?'a sexta-parte (passa a ter direito)':null
+          ].filter(Boolean).join(', ')}. Confira com o RH ou um especialista.</div>`
+      : `<div class="resultado nao">Nesta simulação, a recontagem não altera triênio, letra nem sexta-parte.</div>`;
+  }
+}
+['adm','afast','apos'].forEach(id => document.getElementById(id).addEventListener('input', calcular));
+calcular();
+</script>
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conferência de descontos | Elessandro</title>
+<script src="/ferramentas/vendor/pdf.min.js"></script>
+<script src="/ferramentas/vendor/xlsx.full.min.js"></script>
+<script src="/ferramentas/vendor/mammoth.browser.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: #1c2733; padding: 20px; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  header { background: #1F4E78; color: #fff; padding: 18px 24px; border-radius: 10px 10px 0 0; }
+  header h1 { font-size: 20px; }
+  header p { font-size: 13px; opacity: .85; margin-top: 4px; }
+  .painel { background: #fff; padding: 24px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .zonas { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 800px) { .zonas { grid-template-columns: 1fr; } }
+  .zona { border: 2.5px dashed #9db3c8; border-radius: 10px; padding: 22px; text-align: center; cursor: pointer; transition: .15s; min-height: 170px; display: flex; flex-direction: column; justify-content: center; }
+  .zona:hover, .zona.arrasto { border-color: #1F4E78; background: #eef4fa; }
+  .zona.ok { border-style: solid; border-color: #2e9e5b; background: #f0faf4; }
+  .zona.erro { border-style: solid; border-color: #c0392b; background: #fdf0ee; }
+  .zona h2 { font-size: 16px; color: #1F4E78; margin-bottom: 6px; }
+  .zona .dica { font-size: 12.5px; color: #667; margin-bottom: 4px; }
+  .zona .status { font-size: 13.5px; margin-top: 10px; font-weight: 600; white-space: pre-line; }
+  .zona.ok .status { color: #1e7a43; }
+  .zona.erro .status { color: #c0392b; font-weight: 500; }
+  .zona input { display: none; }
+  select.abas { margin-top: 10px; padding: 6px 10px; border-radius: 6px; border: 1px solid #9db3c8; font-size: 13px; max-width: 100%; }
+  .acoes { text-align: center; margin: 24px 0 8px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  button { border: 0; border-radius: 8px; padding: 12px 28px; font-size: 15px; font-weight: 600; cursor: pointer; transition: .15s; }
+  #btnConferir { background: #1F4E78; color: #fff; }
+  #btnConferir:disabled { background: #b9c6d2; cursor: not-allowed; }
+  #btnConferir:not(:disabled):hover { background: #163a5c; }
+  #btnExportar, #btnImprimir { background: #e8edf2; color: #1F4E78; display: none; }
+  #btnExportar:hover, #btnImprimir:hover { background: #d7e1ea; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0; }
+  .card { border-radius: 10px; padding: 14px; text-align: center; }
+  .card .num { font-size: 26px; font-weight: 700; }
+  .card .rot { font-size: 12px; margin-top: 2px; }
+  .c-ok { background: #e5f6ec; color: #1e7a43; }
+  .c-prob { background: #fdeaea; color: #b03030; }
+  .c-info { background: #eef2f7; color: #1F4E78; }
+  .c-aviso { background: #fff6dd; color: #8a6d00; }
+  .filtros { margin: 10px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+  .filtros button { padding: 7px 14px; font-size: 13px; background: #e8edf2; color: #334; }
+  .filtros button.ativo { background: #1F4E78; color: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  th { background: #1F4E78; color: #fff; padding: 8px 6px; text-align: left; position: sticky; top: 0; }
+  td { padding: 7px 6px; border-bottom: 1px solid #e3e8ee; }
+  tr:nth-child(even) td { background: #f7f9fb; }
+  .num-cel { text-align: right; font-variant-numeric: tabular-nums; }
+  .tag { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+  .t-ok { background: #C6EFCE; color: #1e6b38; }
+  .t-valor { background: #FFC7CE; color: #92242f; }
+  .t-nao { background: #FFC7CE; color: #92242f; }
+  .t-so { background: #FFEB9C; color: #7a5f00; }
+  .t-aviso { background: #FFEB9C; color: #7a5f00; }
+  .obs { color: #555; font-size: 12px; }
+  .rodape-tot { font-weight: 700; }
+  .rodape-tot td { background: #e8edf2 !important; border-top: 2px solid #1F4E78; }
+  #areaResultado { display: none; margin-top: 10px; }
+  .aviso-geral { background: #fff6dd; border: 1px solid #eedb90; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 14px; display: none; }
+  @media print {
+    .zonas, .acoes, .filtros, header p { display: none !important; }
+    body { background: #fff; padding: 0; }
+    .painel { box-shadow: none; padding: 0; }
+    #areaResultado { display: block !important; }
+  }
+  .sitebar { max-width:1200px; margin:0 auto 12px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .sitebrand { color:#1F4E78; font-size:18px; font-weight:750; text-decoration:none; letter-spacing:-.03em; }
+  .sitebrand small { display:block; color:#718096; font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; margin-top:2px; }
+  .backlink { color:#1F4E78; font-size:13px; font-weight:650; text-decoration:none; padding:8px 12px; border:1px solid #c9d5e1; border-radius:8px; background:#fff; }
+  .backlink:hover { background:#eef4fa; }
+  .privacy { margin:14px 0 0; color:#5e6c7b; font-size:12px; line-height:1.5; text-align:center; }
+  @media(max-width:520px){ body{padding:12px;} .sitebar{align-items:flex-start;} .backlink{font-size:12px;} }
+  @media print { .sitebar,.privacy { display:none!important; } }
+</style>
+</head>
+<body>
+<nav class="sitebar" aria-label="Navegação da ferramenta">
+  <a class="sitebrand" href="/"><span>Elessandro</span><small>ferramentas & notícias</small></a>
+  <a class="backlink" href="/">← Voltar ao início</a>
+</nav>
+<div class="container">
+  <header>
+    <h1>Conferência de Descontos – SINTRAMEM</h1>
+    <p>Arraste a lista enviada e o retorno (Prefeitura ou IPRESV). Aceita Excel (.xlsx/.xls/.csv), Word (.docx) e PDF com texto. A conferência cruza registro (matrícula), nome e valor. Nada sai do seu computador.</p>
+  </header>
+  <div class="painel">
+    <div class="zonas">
+      <div class="zona" id="zonaEnv">
+        <h2>1 — Lista ENVIADA (sindicato)</h2>
+        <div class="dica">Excel, Word, CSV ou PDF com colunas: Holerite/Matrícula, Nome, Valor</div>
+        <div class="dica">Clique ou arraste o arquivo aqui</div>
+        <div class="status" id="stEnv"></div>
+        <select class="abas" id="abasEnv" style="display:none" onclick="event.stopPropagation()"></select>
+        <input type="file" id="fileEnv" accept=".xlsx,.xls,.csv,.docx,.pdf">
+      </div>
+      <div class="zona" id="zonaRet">
+        <h2>2 — RETORNO (Prefeitura / IPRESV)</h2>
+        <div class="dica">PDF do Server Consignado, PDF do IPRESV, Excel ou Word</div>
+        <div class="dica">Clique ou arraste o arquivo aqui</div>
+        <div class="status" id="stRet"></div>
+        <select class="abas" id="abasRet" style="display:none" onclick="event.stopPropagation()"></select>
+        <input type="file" id="fileRet" accept=".xlsx,.xls,.csv,.docx,.pdf">
+      </div>
+    </div>
+    <div class="acoes">
+      <button id="btnConferir" disabled>Conferir listas</button>
+      <button id="btnExportar">Baixar Excel</button>
+      <button id="btnImprimir">Imprimir</button>
+    </div>
+    <div class="aviso-geral" id="avisoGeral"></div>
+    <div id="areaResultado">
+      <div class="cards" id="cards"></div>
+      <div class="filtros" id="filtros">
+        <button data-f="todos" class="ativo">Todos</button>
+        <button data-f="prob">Só problemas</button>
+        <button data-f="ok">Só OK</button>
+      </div>
+      <div style="overflow-x:auto; max-height:65vh; overflow-y:auto">
+        <table id="tabela">
+          <thead><tr>
+            <th>Matrícula</th><th>Nome (enviada)</th><th class="num-cel">Valor enviado</th>
+            <th>Nome (retorno)</th><th class="num-cel">Valor descontado</th>
+            <th>Resultado</th><th>Observação</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <p class="privacy">Os arquivos são processados apenas no seu navegador e não são enviados para o site.</p>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/ferramentas/vendor/pdf.worker.min.js';
+
+const dados = { env: null, ret: null };   // { registros:[{mat,nome,valor,vdesc,sit,motivo}], origem, planilhas }
+let resultado = [];
+
+/* ---------- utilidades ---------- */
+const brl = s => { if (typeof s === 'number') return s;
+  s = String(s).replace(/[R$\s]/g,'');
+  if (/^\d{1,3}(\.\d{3})*,\d{1,2}$/.test(s)) return parseFloat(s.replace(/\./g,'').replace(',','.'));
+  if (/^\d+,\d{1,2}$/.test(s)) return parseFloat(s.replace(',','.'));
+  const n = parseFloat(s); return isNaN(n) ? null : n; };
+const fmt = v => (v==null||v==='') ? '' : v.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+const normNome = s => String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z ]/g,'').replace(/\s+/g,' ').trim();
+const normMat = s => String(s||'').replace(/\D/g,'').replace(/^0+/,'');
+// comparação RIGOROSA de nomes: qualquer letra diferente gera aviso "Conferir nome".
+// (acentos e maiúsculas já foram normalizados; espaços/apóstrofos não contam: O CONNELL = O'CONNELL)
+// Exceção necessária: o relatório da Prefeitura corta os nomes — aceita sem aviso apenas se
+// todas as palavras do nome mais curto existirem, escritas EXATAMENTE iguais, no nome mais longo.
+function nomesParecidos(a, b) {
+  if (!a || !b || a === b) return true;
+  if (a.replace(/ /g,'') === b.replace(/ /g,'')) return true;
+  const ta = a.split(' '), tb = b.split(' ');
+  const [menor, maior] = tb.length <= ta.length ? [tb, new Set(ta)] : [ta, new Set(tb)];
+  return menor.every(w => maior.has(w));
+}
+const RE_MONEY = /\d{1,3}(?:\.\d{3})*,\d{2}/;
+
+/* ---------- leitura de arquivos ---------- */
+async function lerArquivo(file, lado) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (['xlsx','xls','csv'].includes(ext)) return lerExcel(file, lado);
+  if (ext === 'docx') return lerWord(file);
+  if (ext === 'pdf') return lerPDF(file);
+  if (ext === 'doc') throw 'Arquivo .doc (Word antigo) não é suportado. Salve como .docx e tente de novo.';
+  throw 'Formato não suportado: .' + ext;
+}
+
+function extrairRegistrosDeLinhas(matriz) {
+  // matriz = array de arrays (linhas x colunas). Detecta colunas de matrícula, nome e valor.
+  const regs = [];
+  for (const row of matriz) {
+    if (!row || !row.length) continue;
+    const cels = row.map(c => c==null ? '' : String(c).trim()).filter((c,i)=>true);
+    // matrícula: primeira célula só com dígitos (3-7); nome: primeira célula com letras; valor: última célula numérica
+    let mat=null, nome=null, valor=null;
+    for (const c of row) {
+      const s = c==null?'':String(c).trim();
+      if (mat===null && /^\d{3,7}$/.test(s)) { mat = s; continue; }
+      if (mat!==null && nome===null && /[A-Za-zÀ-ú]{2,}/.test(s) && !RE_MONEY.test(s)) { nome = s; continue; }
+    }
+    for (let i=row.length-1; i>=0; i--) {
+      const c = row[i];
+      if (c==null || String(c).trim()==='') continue;
+      const v = (typeof c==='number') ? c : (RE_MONEY.test(String(c).trim()) || /^\d+([.,]\d{1,2})?$/.test(String(c).trim())) ? brl(String(c).trim()) : null;
+      if (v!==null && String(c).trim()!==mat) { valor = v; break; }
+    }
+    if (mat && nome && valor!==null) regs.push({ mat, nome, valor });
+  }
+  return regs;
+}
+
+function lerExcel(file, lado) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => { try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const planilhas = {};
+      const preservarTexto = file.name.toLowerCase().endsWith('.csv');
+      for (const nomeAba of wb.SheetNames) {
+        const matriz = XLSX.utils.sheet_to_json(wb.Sheets[nomeAba], { header: 1, raw: !preservarTexto, defval: null });
+        const regs = extrairRegistrosDeLinhas(matriz);
+        if (regs.length) planilhas[nomeAba] = regs;
+      }
+      const abas = Object.keys(planilhas);
+      if (!abas.length) return rej('Não encontrei registros (matrícula + nome + valor) em nenhuma aba.');
+      res({ planilhas, abaAtiva: abas[abas.length-1], origem: 'Excel' });
+    } catch (err) { rej('Erro ao ler o Excel: ' + err.message); } };
+    r.onerror = () => rej('Não consegui abrir o arquivo.');
+    r.readAsArrayBuffer(file);
+  });
+}
+
+function lerWord(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = async e => { try {
+      const html = (await mammoth.convertToHtml({ arrayBuffer: e.target.result })).value;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      let matriz = [...doc.querySelectorAll('tr')].map(tr => [...tr.querySelectorAll('td,th')].map(td => td.textContent.trim()));
+      let regs = extrairRegistrosDeLinhas(matriz);
+      if (!regs.length) { // sem tabela: tenta linha a linha do texto
+        const texto = (await mammoth.extractRawText({ arrayBuffer: e.target.result })).value;
+        regs = parseLinhasGenericas(texto.split(/\n+/));
+      }
+      if (!regs.length) return rej('Não encontrei registros (matrícula + nome + valor) no Word.');
+      res({ planilhas: { 'Documento': regs }, abaAtiva: 'Documento', origem: 'Word' });
+    } catch (err) { rej('Erro ao ler o Word: ' + err.message); } };
+    r.onerror = () => rej('Não consegui abrir o arquivo.');
+    r.readAsArrayBuffer(file);
+  });
+}
+
+async function lerPDF(file) {
+  const buf = await file.arrayBuffer();
+  const doc = await pdfjsLib.getDocument({ data: buf }).promise;
+  const linhas = []; let totalTexto = 0;
+  for (let p = 1; p <= doc.numPages; p++) {
+    const tc = await (await doc.getPage(p)).getTextContent();
+    const porY = {};
+    for (const it of tc.items) {
+      if (!it.str.trim()) continue;
+      totalTexto += it.str.length;
+      const y = Math.round(it.transform[5] / 3);
+      (porY[y] = porY[y] || []).push({ x: it.transform[4], t: it.str.trim() });
+    }
+    Object.keys(porY).map(Number).sort((a,b)=>b-a)
+      .forEach(y => linhas.push(porY[y].sort((a,b)=>a.x-b.x).map(w=>w.t).join(' ')));
+  }
+  if (totalTexto < 50) throw 'Este PDF é escaneado (imagem, sem texto). Não consigo ler automaticamente — use a versão em Excel/Word, ou peça o arquivo digital.';
+  const textoTodo = linhas.join('\n');
+  let regs, origem;
+  if (/Relat[óo]rio de Descontos em Folha/i.test(textoTodo)) { regs = parsePrefeitura(linhas); origem = 'PDF Prefeitura (Server Consignado)'; }
+  else if (/Relat[óo]rio de Resumo das Contas|IPRESV/i.test(textoTodo)) { regs = parseIPRESV(linhas); origem = 'PDF IPRESV'; }
+  else { regs = parseLinhasGenericas(linhas); origem = 'PDF'; }
+  if (!regs.length) throw 'Li o PDF mas não encontrei registros no padrão matrícula + nome + valor.';
+  // confere com o total declarado no rodapé, se houver
+  let avisoTot = '';
+  const mTot = textoTodo.match(/Total Descontado:\s*R\$\s*([\d.,]+)/i) || textoTodo.match(/N[úu]mero de Registros:\s*\d+\s*Total:\s*([\d.,]+)/i);
+  if (mTot) {
+    const decl = brl(mTot[1]);
+    const soma = regs.reduce((s,r)=>s+(r.vdesc!=null?r.vdesc:r.valor),0);
+    if (decl!=null && Math.abs(decl-soma) > 0.01) avisoTot = `Atenção: a soma lida (R$ ${fmt(soma)}) difere do total declarado no rodapé do PDF (R$ ${fmt(decl)}). Confira o documento original.`;
+  }
+  return { planilhas: { 'PDF': regs }, abaAtiva: 'PDF', origem, avisoTot };
+}
+
+const SIT = { DE:'Descontado', ND:'Não descontado', DP:'Desconto parcial', AR:'Aguardando retorno', NE:'Não enviado' };
+function parsePrefeitura(linhas) {
+  const re = /^(\d{13})\s+(\d{3,7})\s+.*?(\d{3}\.\d{3}\.\d{3}-\d{2})\s+(.*?)\s+\d+\s+\d+\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(DE|ND|DP|AR|NE)\s+(\d{3,5})\s*(.*)$/;
+  const regs = [];
+  for (const l of linhas) {
+    const m = l.match(re);
+    if (m) regs.push({ mat: m[2], nome: m[4], valor: brl(m[5]), vdesc: brl(m[6]), sit: m[7], motivo: (m[9]||'').trim() });
+  }
+  return regs;
+}
+function parseIPRESV(linhas) {
+  const re = /^(\d{3,7})\s+(.+?)\s+(\d{1,3}(?:\.\d{3})*,\d{2})$/;
+  const regs = [];
+  for (const l of linhas) {
+    // Ignora apenas cabeçalhos/rodapés reais (têm ":" ou começam com palavra-chave).
+    // Não filtrar por palavras soltas: sobrenomes como "FOLHA" (ex.: Renata Santana Folha Moura) são nomes válidos.
+    if (/Registros:|Total:|P[áa]gina:|Descri[çc][ãa]o:|N[úu]mero:|^\s*Matr[íi]cula\b|^\s*Grupo\b|^\s*IPRESV\b|^\s*Relat[óo]rio\b|^\s*Folha de Pagamento\b/i.test(l)) continue;
+    const m = l.match(re);
+    if (m && /[A-Za-zÀ-ú]{2,}/.test(m[2])) regs.push({ mat: m[1], nome: m[2], valor: brl(m[3]) });
+  }
+  return regs;
+}
+function parseLinhasGenericas(linhas) {
+  const re = /^(\d{3,7})[\s;.-]+(.+?)[\s;]+R?\$?\s*(\d{1,3}(?:\.\d{3})*,\d{2}|\d+[.,]\d{2})\s*$/;
+  const regs = [];
+  for (const l of linhas) {
+    const m = String(l).trim().match(re);
+    if (m && /[A-Za-zÀ-ú]{2,}/.test(m[2])) regs.push({ mat: m[1], nome: m[2].trim(), valor: brl(m[3]) });
+  }
+  return regs;
+}
+
+/* ---------- interface das zonas ---------- */
+function ligarZona(idZona, idFile, idStatus, idAbas, lado) {
+  const zona = document.getElementById(idZona), inp = document.getElementById(idFile),
+        st = document.getElementById(idStatus), sel = document.getElementById(idAbas);
+  zona.addEventListener('click', e => { if (e.target !== sel) inp.click(); });
+  zona.addEventListener('dragover', e => { e.preventDefault(); zona.classList.add('arrasto'); });
+  zona.addEventListener('dragleave', () => zona.classList.remove('arrasto'));
+  zona.addEventListener('drop', e => { e.preventDefault(); zona.classList.remove('arrasto'); if (e.dataTransfer.files[0]) carregar(e.dataTransfer.files[0]); });
+  inp.addEventListener('change', () => { if (inp.files[0]) carregar(inp.files[0]); });
+  sel.addEventListener('change', () => { dados[lado].abaAtiva = sel.value; mostrarStatus(); });
+
+  async function carregar(file) {
+    zona.classList.remove('ok','erro'); st.textContent = 'Lendo "' + file.name + '"…'; sel.style.display = 'none';
+    document.getElementById('areaResultado').style.display = 'none';
+    document.getElementById('btnExportar').style.display = 'none';
+    document.getElementById('btnImprimir').style.display = 'none';
+    try {
+      const d = await lerArquivo(file, lado);
+      d.nomeArquivo = file.name;
+      dados[lado] = d;
+      const abas = Object.keys(d.planilhas);
+      if (abas.length > 1) {
+        sel.innerHTML = abas.map(a => `<option value="${a}" ${a===d.abaAtiva?'selected':''}>Aba: ${a} (${d.planilhas[a].length} registros)</option>`).join('');
+        sel.style.display = 'inline-block';
+      }
+      zona.classList.add('ok');
+      mostrarStatus();
+      const av = document.getElementById('avisoGeral');
+      if (d.avisoTot) { av.textContent = d.avisoTot; av.style.display = 'block'; } else av.style.display = 'none';
+    } catch (err) {
+      dados[lado] = null; zona.classList.add('erro'); st.textContent = '✕ ' + err;
+    }
+    document.getElementById('btnConferir').disabled = !(dados.env && dados.ret);
+  }
+  function mostrarStatus() {
+    const d = dados[lado]; if (!d) return;
+    const regs = d.planilhas[d.abaAtiva];
+    const tot = regs.reduce((s,r)=>s+(r.vdesc!=null?r.vdesc:r.valor),0);
+    st.textContent = `✓ ${d.nomeArquivo}\n${d.origem} — ${regs.length} registros — total R$ ${fmt(tot)}`;
+  }
+}
+ligarZona('zonaEnv','fileEnv','stEnv','abasEnv','env');
+ligarZona('zonaRet','fileRet','stRet','abasRet','ret');
+
+/* ---------- conferência ---------- */
+function agregar(regs) {
+  const mapa = new Map();
+  for (const r of regs) {
+    const k = normMat(r.mat);
+    if (mapa.has(k)) { const e = mapa.get(k);
+      e.valor += r.valor; if (r.vdesc!=null) e.vdesc = (e.vdesc||0) + r.vdesc; e.lancamentos++;
+    } else mapa.set(k, { ...r, lancamentos: 1 });
+  }
+  return mapa;
+}
+
+document.getElementById('btnConferir').addEventListener('click', () => {
+  const env = agregar(dados.env.planilhas[dados.env.abaAtiva]);
+  const ret = agregar(dados.ret.planilhas[dados.ret.abaAtiva]);
+  const retPorNome = new Map();
+  for (const [k, r] of ret) retPorNome.set(normNome(r.nome), k);
+  resultado = [];
+  const usados = new Set();
+
+  for (const [k, e] of env) {
+    let r = ret.get(k), obs = [], chaveRet = k;
+    if (!r) { // tenta pelo nome
+      const kn = retPorNome.get(normNome(e.nome));
+      if (kn && !usados.has(kn)) { r = ret.get(kn); chaveRet = kn; obs.push(`Matrícula difere: enviada ${e.mat} × retorno ${r.mat} — verificar cadastro`); }
+    }
+    if (!r) { resultado.push({ mat: e.mat, nomeE: e.nome, valE: e.valor, nomeR: '', valR: null, res: 'NÃO CONSTA NO RETORNO', obs: 'Cobrar inclusão no próximo mês', tipo: 'so' }); continue; }
+    usados.add(chaveRet);
+    const vDescontado = r.vdesc != null ? r.vdesc : r.valor;
+    if (e.lancamentos > 1) obs.push(`${e.lancamentos} lançamentos somados na enviada`);
+    if (r.lancamentos > 1) obs.push(`${r.lancamentos} lançamentos somados no retorno`);
+    // nomes muito diferentes (não só grafia/corte/erro de 1-2 letras): avisa
+    if (!nomesParecidos(normNome(e.nome), normNome(r.nome))) obs.push('Conferir nome');
+    let res, tipo;
+    if (r.sit && r.sit !== 'DE' && vDescontado === 0) {
+      res = 'NÃO DESCONTADO'; tipo = 'nao';
+      obs.push((r.motivo || SIT[r.sit] || r.sit) + ` — cobrar R$ ${fmt(e.valor)}`);
+    } else if (Math.abs(e.valor - vDescontado) <= 0.005) {
+      res = 'OK'; tipo = 'ok';
+      if (r.sit === 'DP') { res = 'DESCONTO PARCIAL'; tipo = 'valor'; }
+    } else {
+      res = 'VALOR DIFERENTE'; tipo = 'valor';
+      obs.push(`Diferença: R$ ${fmt(vDescontado - e.valor)}` + (r.sit && r.sit!=='DE' ? ' — ' + (SIT[r.sit]||r.sit) : ''));
+    }
+    resultado.push({ mat: e.mat, nomeE: e.nome, valE: e.valor, nomeR: r.nome, valR: vDescontado, res, obs: obs.join('; '), tipo });
+  }
+  for (const [k, r] of ret) if (!usados.has(k))
+    resultado.push({ mat: r.mat, nomeE: '', valE: null, nomeR: r.nome, valR: (r.vdesc!=null?r.vdesc:r.valor), res: 'SÓ NO RETORNO', obs: 'Não estava na lista enviada — verificar', tipo: 'so' });
+
+  resultado.sort((a,b) => (a.nomeE||a.nomeR).localeCompare(b.nomeE||b.nomeR, 'pt-BR'));
+  desenhar('todos');
+  document.getElementById('areaResultado').style.display = 'block';
+  document.getElementById('btnExportar').style.display = 'inline-block';
+  document.getElementById('btnImprimir').style.display = 'inline-block';
+});
+
+function desenhar(filtro) {
+  const nOK = resultado.filter(r=>r.tipo==='ok').length;
+  const nProb = resultado.length - nOK;
+  const totE = resultado.reduce((s,r)=>s+(r.valE||0),0);
+  const totR = resultado.reduce((s,r)=>s+(r.valR||0),0);
+  document.getElementById('cards').innerHTML = `
+    <div class="card c-info"><div class="num">${resultado.length}</div><div class="rot">registros conferidos</div></div>
+    <div class="card c-ok"><div class="num">${nOK}</div><div class="rot">OK</div></div>
+    <div class="card ${nProb? 'c-prob':'c-ok'}"><div class="num">${nProb}</div><div class="rot">divergências</div></div>
+    <div class="card c-info"><div class="num" style="font-size:18px">R$ ${fmt(totE)}</div><div class="rot">total enviado</div></div>
+    <div class="card c-info"><div class="num" style="font-size:18px">R$ ${fmt(totR)}</div><div class="rot">total descontado</div></div>
+    <div class="card ${Math.abs(totE-totR)>0.005?'c-aviso':'c-ok'}"><div class="num" style="font-size:18px">R$ ${fmt(totE-totR)}</div><div class="rot">diferença</div></div>`;
+  const TAG = { ok:'t-ok', valor:'t-valor', nao:'t-nao', so:'t-so' };
+  const linhas = resultado.filter(r => filtro==='todos' || (filtro==='ok') === (r.tipo==='ok'));
+  document.querySelector('#tabela tbody').innerHTML = linhas.map(r => `
+    <tr><td>${r.mat}</td><td>${r.nomeE}</td><td class="num-cel">${fmt(r.valE)}</td>
+    <td>${r.nomeR}</td><td class="num-cel">${fmt(r.valR)}</td>
+    <td><span class="tag ${TAG[r.tipo]}">${r.res}</span></td><td class="obs">${r.obs}</td></tr>`).join('')
+    + `<tr class="rodape-tot"><td></td><td>TOTAIS (${linhas.length} registros)</td>
+       <td class="num-cel">${fmt(linhas.reduce((s,r)=>s+(r.valE||0),0))}</td><td></td>
+       <td class="num-cel">${fmt(linhas.reduce((s,r)=>s+(r.valR||0),0))}</td><td></td><td></td></tr>`;
+}
+document.getElementById('filtros').addEventListener('click', e => {
+  if (e.target.dataset.f) {
+    document.querySelectorAll('.filtros button').forEach(b=>b.classList.remove('ativo'));
+    e.target.classList.add('ativo'); desenhar(e.target.dataset.f);
+  }
+});
+
+/* ---------- exportar ---------- */
+document.getElementById('btnExportar').addEventListener('click', () => {
+  const linhas = [['Matrícula','Nome (enviada)','Valor enviado','Nome (retorno)','Valor descontado','Resultado','Observação']];
+  for (const r of resultado) linhas.push([r.mat, r.nomeE, r.valE, r.nomeR, r.valR, r.res, r.obs]);
+  linhas.push(['','TOTAIS', resultado.reduce((s,r)=>s+(r.valE||0),0), '', resultado.reduce((s,r)=>s+(r.valR||0),0), '', '']);
+  const ws = XLSX.utils.aoa_to_sheet(linhas);
+  ws['!cols'] = [{wch:10},{wch:42},{wch:14},{wch:42},{wch:16},{wch:22},{wch:50}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Conferência');
+  const hoje = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+  XLSX.writeFile(wb, `Conferencia_${hoje}.xlsx`);
+});
+document.getElementById('btnImprimir').addEventListener('click', () => window.print());
+</script>
+</body>
+</html>
