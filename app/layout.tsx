@@ -55,7 +55,6 @@ export default function RootLayout({
       "@type": "Person",
       name: "Elessandro Eugênio",
       url: "https://elessandro.com.br",
-      sameAs: ["https://github.com/eugepos"],
     },
     inLanguage: "pt-BR",
   };

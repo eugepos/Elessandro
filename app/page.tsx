@@ -151,7 +151,7 @@ export default function Home() {
         </div>
         <p className="editorial-note">Notícias, agendas e regras administrativas podem mudar. Antes de tomar decisões, comprar ingressos ou calcular benefícios, confirme a informação na fonte oficial ou com o setor responsável.</p>
       </section>
-      <footer className="site-footer"><div><strong>Elessandro Eugênio</strong><span>Meu espaço de ferramentas, notícias e cultura.</span></div><a href="https://github.com/eugepos/Elessandro" target="_blank" rel="noopener noreferrer">Código público no GitHub ↗</a></footer>
+      <footer className="site-footer"><div><strong>Elessandro Eugênio</strong><span>Meu espaço de ferramentas, notícias e cultura.</span></div></footer>
     </main>
   );
 }
