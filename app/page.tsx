@@ -12,7 +12,7 @@ export default function Home() {
   const [eventsLoading, setEventsLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/news?v=9").then((response) => response.ok ? response.json() : Promise.reject())
+    fetch("/api/news-v9").then((response) => response.ok ? response.json() : Promise.reject())
       .then((data) => setNews((data.items || []).slice(0, 3)))
       .catch(() => setNews([])).finally(() => setNewsLoading(false));
     fetch("/api/events?v=7").then((response) => response.ok ? response.json() : Promise.reject())
