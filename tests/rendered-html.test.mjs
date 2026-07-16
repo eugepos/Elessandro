@@ -20,9 +20,14 @@ test("renders the streamlined home page with calendars before tools", async () =
   assert.match(html, /Meu espaço de trabalho e consulta/i);
   assert.match(html, /Calendário Oficial de São Vicente/i);
   assert.match(html, /Calendário Escolar de São Vicente 2026/i);
-  assert.ok(html.indexOf("Calendário Oficial de São Vicente") < html.indexOf("Resolva sem complicação"));
+  assert.ok(html.indexOf("Calendário Oficial de São Vicente") < html.indexOf("Descongelamento do tempo da pandemia"));
   assert.match(html, /Ver todas as notícias/i);
   assert.match(html, /Abrir agenda completa/i);
+  assert.doesNotMatch(html, /Acessos rápidos/i);
+  assert.doesNotMatch(html, /Resolva sem complicação/i);
+  assert.doesNotMatch(html, /O que chegou agora/i);
+  assert.doesNotMatch(html, /Uma seleção para começar/i);
+  assert.doesNotMatch(html, /Meu espaço, organizado do meu jeito/i);
   assert.doesNotMatch(html, /Ferramentas e informação para o meu dia a dia/i);
   assert.doesNotMatch(html, /O essencial, sem excesso/i);
   assert.doesNotMatch(html, /Agenda automática completa/i);
@@ -34,7 +39,10 @@ test("renders the streamlined home page with calendars before tools", async () =
 test("renders the dedicated news page", async () => {
   const html = await render("/noticias");
   assert.match(html, /<title>Notícias — Elessandro Eugênio<\/title>/i);
-  assert.match(html, /Informação organizada para consulta/i);
+  assert.match(html, /Filtrar notícias/i);
+  assert.doesNotMatch(html, /Informação organizada para consulta/i);
+  assert.doesNotMatch(html, /Chegando das fontes/i);
+  assert.doesNotMatch(html, /Voltar à página inicial/i);
   assert.match(html, /https:\/\/elessandro\.com\.br\/noticias/i);
 });
 
