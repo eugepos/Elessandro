@@ -3,23 +3,27 @@ import { useEffect, useState } from "react";
 export type NewsItem = { title: string; translatedTitle?: string | null; description: string; translatedDescription?: string | null; url: string; image?: string; publishedAt: string; source: string; category: string; language: "pt" | "en" };
 export type EventItem = { title: string; description: string; startDate: string; endDate?: string; displayDate?: string; url: string; image?: string; venue: string; city: string; price?: string; currency?: string; category: string; badge: string; source: string };
 
-export const eventFilters = ["Todos", "Shows", "Teatro", "Museus e História", "Cinema e séries", "Cultura e oficinas", "Gratuitos"];
+export const eventFilters = ["Todos", "Baixada Santista", "São Paulo", "Gratuitos", "Shows", "Teatro", "Museus e História", "Cinema e séries", "Cultura e oficinas"];
 export const newsFilters = ["Todos", "Investimentos e economia", "Educação e servidores", "Sindicatos", "Tecnologia e IA", "Baixada Santista", "Brasil e mundo", "Sites do exterior", "Alertas oficiais"];
 
 export const officialAgendas = [
-  { name: "Calendário de São Vicente", kind: "Agenda municipal", url: "https://www.saovicente.sp.gov.br/institucional/calendario" },
-  { name: "Calendário Escolar 2026", kind: "SEDUC São Vicente", url: "/documentos/calendario-escolar-sao-vicente-2026.pdf" },
-  { name: "Tokio Marine Hall", kind: "Shows", url: "https://www.tokiomarinehall.com.br/shows/" },
-  { name: "MIS São Paulo", kind: "Exposições", url: "https://mis-sp.org.br/" },
-  { name: "Sesc São Paulo", kind: "Cultura", url: "https://www.sescsp.org.br/programacao/" },
-  { name: "Ticketmaster", kind: "Grandes shows", url: "https://www.ticketmaster.com.br/" },
-  { name: "Museu do Café", kind: "História", url: "https://www.museudocafe.org.br/" },
-  { name: "Museu da Língua Portuguesa", kind: "Museu e literatura", url: "https://www.museudalinguaportuguesa.org.br/category/agenda/" },
-  { name: "Museu do Futebol", kind: "Museu e esporte", url: "https://museudofutebol.org.br/" },
-  { name: "Museu do Ipiranga", kind: "Museu e história", url: "https://museudoipiranga.org.br/programacao/" },
-  { name: "Pinacoteca de São Paulo", kind: "Arte e exposições", url: "https://pinacoteca.org.br/programacao/" },
-  { name: "Museu da Imigração", kind: "Museu e história", url: "https://museudaimigracao.org.br/imprensa" },
-  { name: "Agenda Cultural de Santos", kind: "Baixada Santista", url: "https://www.santos.sp.gov.br/?q=portal/agenda-cultural" },
+  { section: "Baixada Santista", name: "Cultura e eventos de São Vicente", kind: "São Vicente", url: "https://www.saovicente.sp.gov.br/ultimas-noticias" },
+  { section: "Baixada Santista", name: "Agenda Cultural de Santos", kind: "Santos", url: "https://www.santos.sp.gov.br/?q=portal/agenda-cultural" },
+  { section: "Baixada Santista", name: "Sesc Santos", kind: "Cultura", url: "https://www.sescsp.org.br/unidades/santos/" },
+  { section: "Baixada Santista", name: "Sesc Bertioga", kind: "Cultura e lazer", url: "https://www.sescsp.org.br/unidades/bertioga/" },
+  { section: "Baixada Santista", name: "Museu do Café", kind: "Museu e história", url: "https://www.museudocafe.org.br/" },
+  { section: "São Paulo", name: "MIS São Paulo", kind: "Exposições e cinema", url: "https://mis-sp.org.br/" },
+  { section: "São Paulo", name: "Sesc São Paulo", kind: "Cultura", url: "https://www.sescsp.org.br/programacao/" },
+  { section: "São Paulo", name: "Pinacoteca de São Paulo", kind: "Arte e exposições", url: "https://pinacoteca.org.br/programacao/tipo/exposicoes/" },
+  { section: "São Paulo", name: "Museu da Língua Portuguesa", kind: "Museu e literatura", url: "https://www.museudalinguaportuguesa.org.br/category/agenda/" },
+  { section: "São Paulo", name: "Museu do Futebol", kind: "Museu e esporte", url: "https://museudofutebol.org.br/" },
+  { section: "São Paulo", name: "Museu do Ipiranga", kind: "Museu e história", url: "https://museudoipiranga.org.br/programacao/" },
+  { section: "São Paulo", name: "Museu da Imigração", kind: "Museu e história", url: "https://museudaimigracao.org.br/eventos" },
+  { section: "São Paulo", name: "CCBB São Paulo", kind: "Cultura e exposições", url: "https://ccbb.com.br/sao-paulo/programacao/" },
+  { section: "São Paulo", name: "Itaú Cultural", kind: "Cultura e oficinas", url: "https://www.itaucultural.org.br/agenda" },
+  { section: "São Paulo", name: "Japan House São Paulo", kind: "Exposições e oficinas", url: "https://japanhousesp.com.br/programacao/" },
+  { section: "Grandes eventos", name: "Tokio Marine Hall", kind: "Shows", url: "https://www.tokiomarinehall.com.br/shows/" },
+  { section: "Grandes eventos", name: "Ticketmaster", kind: "Ingressos", url: "https://www.ticketmaster.com.br/" },
 ];
 
 export const symplaRegions = [

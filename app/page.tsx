@@ -15,7 +15,7 @@ export default function Home() {
     fetch("/api/news-v9").then((response) => response.ok ? response.json() : Promise.reject())
       .then((data) => setNews((data.items || []).slice(0, 3)))
       .catch(() => setNews([])).finally(() => setNewsLoading(false));
-    fetch("/api/events?v=7").then((response) => response.ok ? response.json() : Promise.reject())
+    fetch("/api/events-v8").then((response) => response.ok ? response.json() : Promise.reject())
       .then((data) => setEvents((data.items || []).slice(0, 6)))
       .catch(() => setEvents([])).finally(() => setEventsLoading(false));
   }, []);

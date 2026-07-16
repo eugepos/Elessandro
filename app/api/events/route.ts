@@ -270,16 +270,18 @@ const officialCulturePages = [
   {
     name: "Pinacoteca de São Paulo",
     city: "São Paulo",
-    url: "https://pinacoteca.org.br/programacao/",
+    url: "https://pinacoteca.org.br/programacao/tipo/exposicoes/",
     title: "Programação da Pinacoteca",
     description: "Exposições, oficinas, visitas e atividades publicadas na programação oficial da Pinacoteca.",
+    category: "Museus e História",
   },
   {
     name: "Museu da Imigração",
     city: "São Paulo",
-    url: "https://museudaimigracao.org.br/imprensa",
+    url: "https://museudaimigracao.org.br/eventos",
     title: "Novidades do Museu da Imigração",
     description: "Programações especiais, oficinas, visitas educativas e atividades divulgadas oficialmente pelo museu.",
+    category: "Museus e História",
   },
   {
     name: "Agenda Cultural de Santos",
@@ -287,6 +289,31 @@ const officialCulturePages = [
     url: "https://www.santos.sp.gov.br/?q=portal/agenda-cultural",
     title: "Agenda cultural de Santos",
     description: "Cinema, música, dança, exposições, museus e atividades divulgadas pela Prefeitura de Santos.",
+    category: "Cultura e oficinas",
+  },
+  {
+    name: "Cultura e eventos de São Vicente",
+    city: "São Vicente",
+    url: "https://www.saovicente.sp.gov.br/ultimas-noticias",
+    title: "Cultura e eventos de São Vicente",
+    description: "Programações culturais, festas, oficinas e atividades divulgadas pela Prefeitura de São Vicente.",
+    category: "Cultura e oficinas",
+  },
+  {
+    name: "CCBB São Paulo",
+    city: "São Paulo",
+    url: "https://ccbb.com.br/sao-paulo/programacao/",
+    title: "Programação do CCBB São Paulo",
+    description: "Exposições, cinema, teatro, música e atividades educativas da programação oficial do CCBB.",
+    category: "Cultura e oficinas",
+  },
+  {
+    name: "Itaú Cultural",
+    city: "São Paulo",
+    url: "https://www.itaucultural.org.br/agenda",
+    title: "Agenda do Itaú Cultural",
+    description: "Teatro, exposições, oficinas, literatura e atividades gratuitas divulgadas pelo Itaú Cultural.",
+    category: "Cultura e oficinas",
   },
 ];
 
@@ -369,7 +396,7 @@ async function fetchExpandedCulture(): Promise<ConnectorResult> {
       city: source.city,
       price: "",
       currency: "",
-      category: "Museus e História",
+      category: source.category,
       badge: "Agenda oficial",
       source: source.name,
     } satisfies EventItem;
@@ -379,8 +406,8 @@ async function fetchExpandedCulture(): Promise<ConnectorResult> {
     ...wpResults.flatMap((result) => result.status === "fulfilled" ? result.value : []),
     ...pageResults.flatMap((result) => result.status === "fulfilled" ? [result.value] : []),
   ];
-  if (!events.length) throw new Error("Museus e agenda de Santos: fontes indisponíveis");
-  return { name: "Museus e agenda de Santos", events };
+  if (!events.length) throw new Error("Museus e agendas culturais: fontes indisponíveis");
+  return { name: "Museus e agendas culturais", events };
 }
 
 function balanced(events: EventItem[]) {
@@ -395,6 +422,9 @@ function balanced(events: EventItem[]) {
     "Pinacoteca de São Paulo",
     "Museu da Imigração",
     "Agenda Cultural de Santos",
+    "Cultura e eventos de São Vicente",
+    "CCBB São Paulo",
+    "Itaú Cultural",
   ];
   const queues = sourceOrder.map((source) => events.filter((event) => event.source === source).sort((a, b) => Date.parse(a.startDate) - Date.parse(b.startDate)));
   const output: EventItem[] = [];
@@ -414,7 +444,7 @@ export async function GET() {
   const now = Date.now();
   const isCurrent = (event: EventItem) => (Date.parse(event.endDate || event.startDate) || 0) >= now - 86400000;
   const reports = results.map((result, index) => {
-    const fallbackName = ["Tokio Marine Hall", "MIS São Paulo", "Sesc São Paulo", "Museu do Café", "Museus e agenda de Santos"][index];
+    const fallbackName = ["Tokio Marine Hall", "MIS São Paulo", "Sesc São Paulo", "Museu do Café", "Museus e agendas culturais"][index];
     const eventCount = result.status === "fulfilled" ? result.value.events.filter(isCurrent).length : 0;
     return result.status === "fulfilled"
       ? { name: result.value.name, status: eventCount ? "active" : "empty", eventCount }

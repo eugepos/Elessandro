@@ -50,7 +50,10 @@ test("renders the dedicated news page", async () => {
 test("renders the dedicated cultural agenda", async () => {
   const html = await render("/agenda");
   assert.match(html, /<title>Agenda cultural — Elessandro Eugênio<\/title>/i);
-  assert.match(html, /Programas para perto e para uma boa viagem/i);
+  assert.match(html, /Agenda cultural/i);
+  assert.doesNotMatch(html, /Programas para perto e para uma boa viagem/i);
+  assert.match(html, /CCBB São Paulo/i);
+  assert.match(html, /museudaimigracao\.org\.br\/eventos/i);
   assert.match(html, /São Paulo e Baixada Santista/i);
   assert.match(html, /sympla\.com\.br\/eventos\/sao-paulo-sp/i);
   assert.match(html, /https:\/\/elessandro\.com\.br\/agenda/i);
