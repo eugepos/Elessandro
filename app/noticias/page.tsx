@@ -16,7 +16,7 @@ export default function NewsPage() {
   const filtered = useMemo(() => filter === "Todos" ? items : items.filter((item) => item.category === filter), [filter, items]);
 
   useEffect(() => {
-    fetch("/api/news?v=7").then((response) => response.ok ? response.json() : Promise.reject())
+    fetch("/api/news?v=8").then((response) => response.ok ? response.json() : Promise.reject())
       .then((data) => { setItems(data.items || []); setActiveSources(data.activeSources || 0); setTotalSources(data.totalSources || 0); setUnavailableSources(data.unavailableSources || 0); })
       .catch(() => setItems([])).finally(() => setLoading(false));
   }, []);

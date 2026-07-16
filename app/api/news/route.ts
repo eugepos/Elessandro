@@ -17,6 +17,15 @@ type NewsEntry = {
   language: "pt" | "en";
 };
 
+type CentralBankNews = {
+  titulo?: string;
+  Id?: number;
+  urlImg?: { Url?: string };
+  dataPublicacao?: string;
+  ultimaAtualizacao?: string;
+  corpo?: string;
+};
+
 const feeds: FeedSource[] = [
   { name: "Agência Brasil", url: "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml", category: "Brasil e mundo", language: "pt" },
   { name: "BBC News Brasil", url: "https://feeds.bbci.co.uk/portuguese/rss.xml", category: "Brasil e mundo", language: "pt" },
@@ -27,6 +36,7 @@ const feeds: FeedSource[] = [
   { name: "Olhar Digital", url: "https://olhardigital.com.br/feed/", category: "Tecnologia e IA", language: "pt" },
   { name: "G1 Santos e Região", url: "https://g1.globo.com/rss/g1/sp/santos-regiao/", category: "Baixada Santista", language: "pt" },
   { name: "Diário do Litoral", url: "https://www.diariodolitoral.com.br/rss/", category: "Baixada Santista", language: "pt" },
+  { name: "Santa Portal", url: "https://santaportal.com.br/feed/", category: "Baixada Santista", language: "pt" },
   { name: "FESSPMESP", url: "https://fesspsp.com.br/feed/", category: "Sindicatos", language: "pt" },
   { name: "SINTRAMEM", url: "https://sintramem-sv.org.br/sintramem/feed/", category: "Sindicatos", language: "pt" },
   { name: "SindServSV", url: "https://sindservsv.com.br/feed/", category: "Sindicatos", language: "pt" },
@@ -36,6 +46,12 @@ const feeds: FeedSource[] = [
   { name: "Câmara de São Vicente", url: "https://www.saovicente.sp.leg.br/RSS", category: "Alertas oficiais", language: "pt", includeKeywords: ["servidor", "magistério", "educação", "professor", "salário", "reajuste", "carreira", "previdência", "ipresv", "aposentado", "pensionista", "caixa de saúde", "concurso público", "plano de cargos"] },
   { name: "OpenAI", url: "https://openai.com/news/rss.xml", category: "Tecnologia e IA", language: "en" },
   { name: "Google DeepMind", url: "https://deepmind.google/blog/rss.xml", category: "Tecnologia e IA", language: "en" },
+  { name: "Agência de Notícias do IBGE", url: "https://agenciadenoticias.ibge.gov.br/agencia-rss", category: "Investimentos e economia", language: "pt" },
+  { name: "MEC", url: "https://news.google.com/rss/search?q=site%3Agov.br%2Fmec%2Fpt-br%2Fassuntos%2Fnoticias&hl=pt-BR&gl=BR&ceid=BR%3Apt-419", category: "Educação e servidores", language: "pt" },
+  { name: "FNDE", url: "https://news.google.com/rss/search?q=site%3Agov.br%2Ffnde%2Fpt-br%2Fassuntos%2Fnoticias&hl=pt-BR&gl=BR&ceid=BR%3Apt-419", category: "Educação e servidores", language: "pt" },
+  { name: "BBC World", url: "https://feeds.bbci.co.uk/news/world/rss.xml", category: "Sites do exterior", language: "en" },
+  { name: "UNESCO", url: "https://news.google.com/rss/search?q=site%3Aunesco.org%2Fen%2Farticles%20education&hl=en-US&gl=US&ceid=US%3Aen", category: "Sites do exterior", language: "en" },
+  { name: "Education International", url: "https://news.google.com/rss/search?q=site%3Aei-ie.org%2Fen%2Fitem&hl=en-US&gl=US&ceid=US%3Aen", category: "Sites do exterior", language: "en" },
 ];
 
 const municipalKeywords = ["servidor", "magistério", "educação", "educacional", "professor", "escola", "seduc", "concurso", "vida funcional", "aposentado", "pensionista", "ipresv", "caixa de saúde", "perícia", "folha de pagamento", "salário", "reajuste", "carreira"];
@@ -91,12 +107,17 @@ function parseFeed(xml: string, source: FeedSource) {
   const blocks = xml.match(/<item(?:\s[^>]*)?>[\s\S]*?<\/item>/gi) || xml.match(/<entry(?:\s[^>]*)?>[\s\S]*?<\/entry>/gi) || [];
   return blocks.map((block) => {
     const atomLink = block.match(/<link[^>]+href=["']([^"']+)["']/i)?.[1] || "";
-    const description = stripTags(field(block, ["description", "summary", "content"]))
+    const rawTitle = stripTags(field(block, ["title"]));
+    const title = source.url.includes("news.google.com")
+      ? rawTitle.replace(/\s+-\s+(?:www\.gov\.br|UNESCO|Education International)$/i, "").trim()
+      : rawTitle;
+    const rawDescription = stripTags(field(block, ["description", "summary", "content"]))
       .replace(/\s+(?:data-[a-z-]+|srcset|loading|decoding|class|width|height)=["'][\s\S]*$/i, "")
       .replace(/\s*The post[\s\S]*?appeared first on[\s\S]*$/i, "")
       .trim();
+    const description = normalized(rawDescription).startsWith(normalized(title)) ? "" : rawDescription;
     return {
-      title: stripTags(field(block, ["title"])),
+      title,
       description: description.slice(0, 190),
       url: stripTags(field(block, ["link"])) || decodeEntities(atomLink),
       image: imageFromFeed(block),
@@ -147,19 +168,32 @@ function parseOfficialBulletins(html: string): NewsEntry[] {
   }).filter((item) => /^Boletim Oficial do Município - Edição/i.test(item.title) && item.url.startsWith("http")).slice(0, 5);
 }
 
-async function translateTitle(title: string) {
+function parseCentralBankNews(payload: { conteudo?: CentralBankNews[] }): NewsEntry[] {
+  return (payload.conteudo || []).map((item) => ({
+    title: stripTags(item.titulo || ""),
+    description: stripTags(item.corpo || "").slice(0, 190),
+    url: item.Id ? `https://www.bcb.gov.br/detalhenoticia/${item.Id}/noticia` : "",
+    image: item.urlImg?.Url,
+    publishedAt: item.dataPublicacao || item.ultimaAtualizacao || new Date().toISOString(),
+    source: "Banco Central do Brasil",
+    category: "Investimentos e economia",
+    language: "pt" as const,
+  })).filter((item) => item.title && item.url).slice(0, 5);
+}
+
+async function translateText(value: string) {
   try {
     const endpoint = new URL("https://translate.googleapis.com/translate_a/single");
     endpoint.searchParams.set("client", "gtx");
     endpoint.searchParams.set("sl", "en");
     endpoint.searchParams.set("tl", "pt");
     endpoint.searchParams.set("dt", "t");
-    endpoint.searchParams.set("q", title);
+    endpoint.searchParams.set("q", value);
     const response = await fetch(endpoint, { headers: { "User-Agent": "ElessandroNoticias/1.0" } });
     if (!response.ok) return null;
     const data = await response.json() as unknown[][];
     const translated = Array.isArray(data?.[0]) ? data[0].map((part) => Array.isArray(part) ? part[0] : "").join("") : "";
-    return translated && translated !== title ? translated : null;
+    return translated && translated !== value ? translated : null;
   } catch {
     return null;
   }
@@ -182,6 +216,11 @@ export async function GET() {
       if (!response.ok) throw new Error(`BOM São Vicente: ${response.status}`);
       return parseOfficialBulletins(await response.text());
     } },
+    { name: "Banco Central do Brasil", load: async () => {
+      const response = await fetch("https://www.bcb.gov.br/api/servico/sitebcb/noticias", { headers: { "User-Agent": "ElessandroNoticias/1.0" }, cf: { cacheTtl: 900 } } as RequestInit);
+      if (!response.ok) throw new Error(`Banco Central do Brasil: ${response.status}`);
+      return parseCentralBankNews(await response.json() as { conteudo?: CentralBankNews[] });
+    } },
   ];
   const results = await Promise.allSettled(loaders.map((source) => source.load()));
   const sourceReports = loaders.map((source, index) => ({
@@ -194,14 +233,22 @@ export async function GET() {
   const categoryCounts = new Map<string, number>();
   const unique = sorted.filter((item) => {
     const count = categoryCounts.get(item.category) || 0;
-    const limit = item.category === "Educação e servidores" || item.category === "Sindicatos" ? 30 : item.category === "Alertas oficiais" ? 20 : 12;
+    const limit = item.category === "Educação e servidores" || item.category === "Sindicatos" ? 30
+      : item.category === "Alertas oficiais" || item.category === "Investimentos e economia" || item.category === "Baixada Santista" ? 20
+      : item.category === "Sites do exterior" ? 15
+      : 12;
     if (count >= limit) return false;
     categoryCounts.set(item.category, count + 1);
     return true;
   });
-  const translatedItems = await Promise.all(unique.map(async (item) => item.language === "en"
-    ? { ...item, translatedTitle: await translateTitle(item.title) }
-    : { ...item, translatedTitle: null }));
+  const translatedItems = await Promise.all(unique.map(async (item) => {
+    if (item.language !== "en") return { ...item, translatedTitle: null, translatedDescription: null };
+    const [translatedTitle, translatedDescription] = await Promise.all([
+      translateText(item.title),
+      item.description ? translateText(item.description) : Promise.resolve(null),
+    ]);
+    return { ...item, translatedTitle, translatedDescription };
+  }));
   const activeSources = sourceReports.filter((source) => source.status === "active").length;
   const unavailableSources = sourceReports.filter((source) => source.status === "unavailable").length;
 
