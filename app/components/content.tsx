@@ -1,8 +1,8 @@
-export type NewsItem = { title: string; translatedTitle?: string | null; description: string; url: string; publishedAt: string; source: string; category: string; language: "pt" | "en" };
+export type NewsItem = { title: string; translatedTitle?: string | null; description: string; url: string; image?: string; publishedAt: string; source: string; category: string; language: "pt" | "en" };
 export type EventItem = { title: string; description: string; startDate: string; endDate?: string; displayDate?: string; url: string; image?: string; venue: string; city: string; price?: string; currency?: string; category: string; badge: string; source: string };
 
 export const eventFilters = ["Todos", "Shows", "Teatro", "Museus e História", "Cinema e séries", "Cultura e oficinas", "Gratuitos"];
-export const newsFilters = ["Todos", "Investimentos e economia", "Educação e servidores", "Tecnologia e IA", "Baixada Santista", "Brasil e mundo", "Alertas oficiais"];
+export const newsFilters = ["Todos", "Investimentos e economia", "Educação e servidores", "Sindicatos", "Tecnologia e IA", "Baixada Santista", "Brasil e mundo", "Alertas oficiais"];
 
 export const officialAgendas = [
   { name: "Calendário de São Vicente", kind: "Agenda municipal", url: "https://www.saovicente.sp.gov.br/institucional/calendario" },
@@ -53,11 +53,14 @@ export function formatEventDate(value: string, endValue?: string) {
 export function NewsCard({ item }: { item: NewsItem }) {
   return (
     <article className="latest-card">
-      <div><span>{item.category}</span>{item.language === "en" && <small>{item.translatedTitle ? "Tradução automática" : "Original em inglês"}</small>}</div>
-      <h3>{item.translatedTitle || item.title}</h3>
-      {item.translatedTitle && <p className="original-title">Original: {item.title}</p>}
-      {item.description && <p>{item.description}</p>}
-      <footer><span>{item.source} · {formatDate(item.publishedAt)}</span><a href={item.url} target="_blank" rel="noopener noreferrer">Ler na fonte ↗</a></footer>
+      {item.image && <div className="news-media"><img src={item.image} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(error) => error.currentTarget.parentElement?.classList.add("image-failed")} /></div>}
+      <div className="news-card-content">
+        <div className="news-topline"><span>{item.category}</span>{item.language === "en" && <small>{item.translatedTitle ? "Tradução automática" : "Original em inglês"}</small>}</div>
+        <h3>{item.translatedTitle || item.title}</h3>
+        {item.translatedTitle && <p className="original-title">Original: {item.title}</p>}
+        {item.description && <p>{item.description}</p>}
+        <footer><span>{item.source} · {formatDate(item.publishedAt)}</span><a href={item.url} target="_blank" rel="noopener noreferrer">Ler na fonte ↗</a></footer>
+      </div>
     </article>
   );
 }

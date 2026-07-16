@@ -40,6 +40,7 @@ test("renders the dedicated news page", async () => {
   const html = await render("/noticias");
   assert.match(html, /<title>Notícias — Elessandro Eugênio<\/title>/i);
   assert.match(html, /Filtrar notícias/i);
+  assert.match(html, /Sindicatos/i);
   assert.doesNotMatch(html, /Informação organizada para consulta/i);
   assert.doesNotMatch(html, /Chegando das fontes/i);
   assert.doesNotMatch(html, /Voltar à página inicial/i);

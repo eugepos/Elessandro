@@ -10,6 +10,7 @@ type NewsEntry = {
   title: string;
   description: string;
   url: string;
+  image?: string;
   publishedAt: string;
   source: string;
   category: string;
@@ -26,9 +27,9 @@ const feeds: FeedSource[] = [
   { name: "Olhar Digital", url: "https://olhardigital.com.br/feed/", category: "Tecnologia e IA", language: "pt" },
   { name: "G1 Santos e Região", url: "https://g1.globo.com/rss/g1/sp/santos-regiao/", category: "Baixada Santista", language: "pt" },
   { name: "Diário do Litoral", url: "https://www.diariodolitoral.com.br/rss/", category: "Baixada Santista", language: "pt" },
-  { name: "FESSPMESP", url: "https://fesspsp.com.br/feed/", category: "Educação e servidores", language: "pt" },
-  { name: "SINTRAMEM", url: "https://sintramem-sv.org.br/sintramem/feed/", category: "Educação e servidores", language: "pt" },
-  { name: "SindServSV", url: "https://sindservsv.com.br/feed/", category: "Educação e servidores", language: "pt" },
+  { name: "FESSPMESP", url: "https://fesspsp.com.br/feed/", category: "Sindicatos", language: "pt" },
+  { name: "SINTRAMEM", url: "https://sintramem-sv.org.br/sintramem/feed/", category: "Sindicatos", language: "pt" },
+  { name: "SindServSV", url: "https://sindservsv.com.br/feed/", category: "Sindicatos", language: "pt" },
   { name: "RH/SEDUC São Vicente", url: "https://rhseducsv.wordpress.com/feed/", category: "Educação e servidores", language: "pt" },
   { name: "Caixa de Saúde SV", url: "https://caixasaudesaovicente.sp.gov.br/feed/", category: "Educação e servidores", language: "pt" },
   { name: "IPRESV", url: "https://www.ipresv.sp.gov.br/ipresv/feed/", category: "Alertas oficiais", language: "pt" },
@@ -72,6 +73,20 @@ function field(block: string, names: string[]) {
   return "";
 }
 
+function imageFromFeed(block: string) {
+  const media = block.match(/<(?:media:content|media:thumbnail)\b[^>]*\burl=["']([^"']+)["']/i)?.[1];
+  const featured = stripTags(field(block, ["jetpack_featured_media_url"]));
+  const enclosureTag = block.match(/<enclosure\b[^>]*>/i)?.[0] || "";
+  const enclosure = /\btype=["']image\//i.test(enclosureTag) || /\.(?:jpe?g|png|webp)(?:\?|["'])/i.test(enclosureTag)
+    ? enclosureTag.match(/\burl=["']([^"']+)["']/i)?.[1]
+    : "";
+  const richContent = field(block, ["content:encoded", "description", "content", "summary"]);
+  const embedded = richContent.match(/<img\b[^>]*(?:\bsrc|\bdata-src)=["']([^"']+)["']/i)?.[1];
+  const candidate = decodeEntities(media || featured || enclosure || embedded || "").trim();
+  if (!/^https?:\/\//i.test(candidate) || /(?:gravatar|avatar|emoji|pixel\.wp\.com|\.svg(?:\?|$))/i.test(candidate)) return undefined;
+  return candidate;
+}
+
 function parseFeed(xml: string, source: FeedSource) {
   const blocks = xml.match(/<item(?:\s[^>]*)?>[\s\S]*?<\/item>/gi) || xml.match(/<entry(?:\s[^>]*)?>[\s\S]*?<\/entry>/gi) || [];
   return blocks.map((block) => {
@@ -84,6 +99,7 @@ function parseFeed(xml: string, source: FeedSource) {
       title: stripTags(field(block, ["title"])),
       description: description.slice(0, 190),
       url: stripTags(field(block, ["link"])) || decodeEntities(atomLink),
+      image: imageFromFeed(block),
       publishedAt: stripTags(field(block, ["pubDate", "published", "updated", "dc:date"])),
       source: source.name,
       category: source.category,
@@ -106,6 +122,7 @@ function parseMunicipalNews(html: string): NewsEntry[] {
       title,
       description,
       url: link?.[1] || "",
+      image: link?.[1] ? `${link[1].replace(/\/$/, "")}/@@images/image/preview` : undefined,
       publishedAt: isoFromBrazilianDate(date),
       source: "Prefeitura de São Vicente",
       category: "Educação e servidores",
@@ -177,7 +194,7 @@ export async function GET() {
   const categoryCounts = new Map<string, number>();
   const unique = sorted.filter((item) => {
     const count = categoryCounts.get(item.category) || 0;
-    const limit = item.category === "Educação e servidores" ? 30 : item.category === "Alertas oficiais" ? 20 : 12;
+    const limit = item.category === "Educação e servidores" || item.category === "Sindicatos" ? 30 : item.category === "Alertas oficiais" ? 20 : 12;
     if (count >= limit) return false;
     categoryCounts.set(item.category, count + 1);
     return true;
