@@ -3,6 +3,17 @@ type FeedSource = {
   url: string;
   category: string;
   language: "pt" | "en";
+  includeKeywords?: string[];
+};
+
+type NewsEntry = {
+  title: string;
+  description: string;
+  url: string;
+  publishedAt: string;
+  source: string;
+  category: string;
+  language: "pt" | "en";
 };
 
 const feeds: FeedSource[] = [
@@ -15,11 +26,18 @@ const feeds: FeedSource[] = [
   { name: "Olhar Digital", url: "https://olhardigital.com.br/feed/", category: "Tecnologia e IA", language: "pt" },
   { name: "G1 Santos e Região", url: "https://g1.globo.com/rss/g1/sp/santos-regiao/", category: "Baixada Santista", language: "pt" },
   { name: "Diário do Litoral", url: "https://www.diariodolitoral.com.br/rss/", category: "Baixada Santista", language: "pt" },
-  { name: "CNTE", url: "https://cnte.org.br/index.php/menu/comunicacao/posts/noticias?format=feed&type=rss", category: "Educação e servidores", language: "pt" },
-  { name: "APEOESP", url: "https://www.apeoesp.org.br/feed/", category: "Educação e servidores", language: "pt" },
+  { name: "FESSPMESP", url: "https://fesspsp.com.br/feed/", category: "Educação e servidores", language: "pt" },
+  { name: "SINTRAMEM", url: "https://sintramem-sv.org.br/sintramem/feed/", category: "Educação e servidores", language: "pt" },
+  { name: "SindServSV", url: "https://sindservsv.com.br/feed/", category: "Educação e servidores", language: "pt" },
+  { name: "RH/SEDUC São Vicente", url: "https://rhseducsv.wordpress.com/feed/", category: "Educação e servidores", language: "pt" },
+  { name: "Caixa de Saúde SV", url: "https://caixasaudesaovicente.sp.gov.br/feed/", category: "Educação e servidores", language: "pt" },
+  { name: "IPRESV", url: "https://www.ipresv.sp.gov.br/ipresv/feed/", category: "Alertas oficiais", language: "pt" },
+  { name: "Câmara de São Vicente", url: "https://www.saovicente.sp.leg.br/RSS", category: "Alertas oficiais", language: "pt", includeKeywords: ["servidor", "magistério", "educação", "professor", "salário", "reajuste", "carreira", "previdência", "ipresv", "aposentado", "pensionista", "caixa de saúde", "concurso público", "plano de cargos"] },
   { name: "OpenAI", url: "https://openai.com/news/rss.xml", category: "Tecnologia e IA", language: "en" },
   { name: "Google DeepMind", url: "https://deepmind.google/blog/rss.xml", category: "Tecnologia e IA", language: "en" },
 ];
+
+const municipalKeywords = ["servidor", "magistério", "educação", "educacional", "professor", "escola", "seduc", "concurso", "vida funcional", "aposentado", "pensionista", "ipresv", "caixa de saúde", "perícia", "folha de pagamento", "salário", "reajuste", "carreira"];
 
 const namedEntities: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " ", ldquo: '“', rdquo: '”', lsquo: "‘", rsquo: "’", ndash: "–", mdash: "—", hellip: "…", aacute: "á", agrave: "à", acirc: "â", atilde: "ã", eacute: "é", ecirc: "ê", iacute: "í", oacute: "ó", ocirc: "ô", otilde: "õ", uacute: "ú", ccedil: "ç", Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú", Ccedil: "Ç" };
 const decodeEntities = (value: string) => value
@@ -35,6 +53,17 @@ const stripTags = (value: string) => decodeEntities(value)
   .replace(/(R\$\s*\d+),\s+(\d)/g, "$1,$2")
   .trim();
 
+const normalized = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const matchesKeywords = (value: string, keywords: string[]) => {
+  const haystack = normalized(value);
+  return keywords.some((keyword) => haystack.includes(normalized(keyword)));
+};
+
+const isoFromBrazilianDate = (value: string) => {
+  const match = value.match(/\b(\d{2})\/(\d{2})\/(\d{4})\b/);
+  return match ? `${match[3]}-${match[2]}-${match[1]}T12:00:00-03:00` : new Date().toISOString();
+};
+
 function field(block: string, names: string[]) {
   for (const name of names) {
     const match = block.match(new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${name}>`, "i"));
@@ -45,7 +74,7 @@ function field(block: string, names: string[]) {
 
 function parseFeed(xml: string, source: FeedSource) {
   const blocks = xml.match(/<item(?:\s[^>]*)?>[\s\S]*?<\/item>/gi) || xml.match(/<entry(?:\s[^>]*)?>[\s\S]*?<\/entry>/gi) || [];
-  return blocks.slice(0, 5).map((block) => {
+  return blocks.map((block) => {
     const atomLink = block.match(/<link[^>]+href=["']([^"']+)["']/i)?.[1] || "";
     const description = stripTags(field(block, ["description", "summary", "content"]))
       .replace(/\s+(?:data-[a-z-]+|srcset|loading|decoding|class|width|height)=["'][\s\S]*$/i, "")
@@ -60,7 +89,45 @@ function parseFeed(xml: string, source: FeedSource) {
       category: source.category,
       language: source.language,
     };
-  }).filter((item) => item.title && item.url);
+  }).filter((item) => item.title && item.url)
+    .filter((item) => !source.includeKeywords?.length || matchesKeywords(`${item.title} ${item.description}`, source.includeKeywords))
+    .slice(0, 5);
+}
+
+function parseMunicipalNews(html: string): NewsEntry[] {
+  const blocks = html.match(/<div\b[^>]*class=["'][^"']*\bnoticia\b[^"']*["'][^>]*>[\s\S]*?<\/div>/gi) || [];
+  return blocks.map((block) => {
+    const link = block.match(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/i);
+    const title = stripTags(link?.[2] || "");
+    const date = block.match(/\b\d{2}\/\d{2}\/\d{4}\b/)?.[0] || "";
+    const plain = stripTags(block);
+    const description = plain.replace(title, "").replace(date, "").replace(/^[\s–—-]+/, "").trim().slice(0, 190);
+    return {
+      title,
+      description,
+      url: link?.[1] || "",
+      publishedAt: isoFromBrazilianDate(date),
+      source: "Prefeitura de São Vicente",
+      category: "Educação e servidores",
+      language: "pt" as const,
+    };
+  }).filter((item) => item.title && item.url && matchesKeywords(`${item.title} ${item.description}`, municipalKeywords)).slice(0, 5);
+}
+
+function parseOfficialBulletins(html: string): NewsEntry[] {
+  const links = Array.from(html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi));
+  return links.map((match) => {
+    const title = stripTags(match[2]);
+    return {
+      title,
+      description: "Publicação oficial do Município com atos administrativos, portarias, legislação e comunicados.",
+      url: match[1],
+      publishedAt: isoFromBrazilianDate(title),
+      source: "BOM São Vicente",
+      category: "Alertas oficiais",
+      language: "pt" as const,
+    };
+  }).filter((item) => /^Boletim Oficial do Município - Edição/i.test(item.title) && item.url.startsWith("http")).slice(0, 5);
 }
 
 async function translateTitle(title: string) {
@@ -82,23 +149,46 @@ async function translateTitle(title: string) {
 }
 
 export async function GET() {
-  const results = await Promise.allSettled(feeds.map(async (source) => {
-    const response = await fetch(source.url, { headers: { "User-Agent": "ElessandroNoticias/1.0" }, cf: { cacheTtl: 900 } } as RequestInit);
-    if (!response.ok) throw new Error(`${source.name}: ${response.status}`);
-    return parseFeed(await response.text(), source);
+  const loaders = [
+    ...feeds.map((source) => ({ name: source.name, load: async () => {
+      const response = await fetch(source.url, { headers: { "User-Agent": "ElessandroNoticias/1.0" }, cf: { cacheTtl: 900 } } as RequestInit);
+      if (!response.ok) throw new Error(`${source.name}: ${response.status}`);
+      return parseFeed(await response.text(), source);
+    } })),
+    { name: "Prefeitura de São Vicente", load: async () => {
+      const response = await fetch("https://www.saovicente.sp.gov.br/ultimas-noticias", { headers: { "User-Agent": "ElessandroNoticias/1.0" }, cf: { cacheTtl: 900 } } as RequestInit);
+      if (!response.ok) throw new Error(`Prefeitura de São Vicente: ${response.status}`);
+      return parseMunicipalNews(await response.text());
+    } },
+    { name: "BOM São Vicente", load: async () => {
+      const response = await fetch("https://www.saovicente.sp.gov.br/transparencia/bom", { headers: { "User-Agent": "ElessandroNoticias/1.0" }, cf: { cacheTtl: 900 } } as RequestInit);
+      if (!response.ok) throw new Error(`BOM São Vicente: ${response.status}`);
+      return parseOfficialBulletins(await response.text());
+    } },
+  ];
+  const results = await Promise.allSettled(loaders.map((source) => source.load()));
+  const sourceReports = loaders.map((source, index) => ({
+    name: source.name,
+    status: results[index].status === "rejected" ? "unavailable" : results[index].value.length ? "active" : "idle",
   }));
-
   const items = results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
-  const unique = Array.from(new Map(items.map((item) => [item.url, item])).values())
-    .sort((a, b) => (Date.parse(b.publishedAt) || 0) - (Date.parse(a.publishedAt) || 0))
-    .slice(0, 36);
+  const sorted = Array.from(new Map(items.map((item) => [item.url, item])).values())
+    .sort((a, b) => (Date.parse(b.publishedAt) || 0) - (Date.parse(a.publishedAt) || 0));
+  const categoryCounts = new Map<string, number>();
+  const unique = sorted.filter((item) => {
+    const count = categoryCounts.get(item.category) || 0;
+    const limit = item.category === "Educação e servidores" ? 30 : item.category === "Alertas oficiais" ? 20 : 12;
+    if (count >= limit) return false;
+    categoryCounts.set(item.category, count + 1);
+    return true;
+  });
   const translatedItems = await Promise.all(unique.map(async (item) => item.language === "en"
     ? { ...item, translatedTitle: await translateTitle(item.title) }
     : { ...item, translatedTitle: null }));
-  const activeSources = new Set(unique.map((item) => item.source)).size;
-  const unavailableSources = feeds.length - activeSources;
+  const activeSources = sourceReports.filter((source) => source.status === "active").length;
+  const unavailableSources = sourceReports.filter((source) => source.status === "unavailable").length;
 
-  return Response.json({ items: translatedItems, activeSources, totalSources: feeds.length, unavailableSources, updatedAt: new Date().toISOString() }, {
+  return Response.json({ items: translatedItems, activeSources, totalSources: sourceReports.length, unavailableSources, sources: sourceReports, updatedAt: new Date().toISOString() }, {
     headers: { "Cache-Control": "public, max-age=300, s-maxage=900" },
   });
 }
