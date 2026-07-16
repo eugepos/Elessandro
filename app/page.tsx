@@ -25,18 +25,12 @@ export default function Home() {
       <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
       <SiteHeader active="inicio" />
 
-      <section className="hero compact-hero" id="conteudo" aria-labelledby="hero-title">
-        <div className="hero-copy">
-          <p className="eyebrow">Meu espaço de trabalho e consulta</p>
-          <h1 id="hero-title">Ferramentas e informação para o meu dia a dia.</h1>
-          <p>Um ponto de partida pessoal para trabalhar, consultar notícias e encontrar programas culturais em São Vicente, na Baixada Santista e em São Paulo.</p>
-          <div className="hero-actions"><a className="primary-action" href="#ferramentas">Abrir ferramentas ↓</a><a className="secondary-action" href="/agenda">Ver agenda cultural →</a></div>
+      <section className="home-section quick-section calendar-section" id="conteudo" aria-labelledby="calendar-title">
+        <div className="section-heading calendar-heading"><p className="eyebrow">Acessos rápidos</p><h1 id="calendar-title">Calendários</h1></div>
+        <div className="quick-grid calendar-grid">
+          <a href="https://www.saovicente.sp.gov.br/institucional/calendario" target="_blank" rel="noopener noreferrer"><span>Agenda municipal</span><strong>Calendário Oficial de São Vicente</strong><small>Abrir fonte oficial ↗</small></a>
+          <a href="/documentos/calendario-escolar-sao-vicente-2026.pdf" target="_blank" rel="noopener noreferrer"><span>SEDUC · BOM 584</span><strong>Calendário Escolar de São Vicente 2026</strong><small>Abrir documento ↗</small></a>
         </div>
-        <aside className="purpose-card" aria-label="Finalidade do site">
-          <span>Meu espaço</span>
-          <strong>O essencial, sem excesso.</strong>
-          <p>Ferramentas primeiro. Notícias e agenda em resumos rápidos, com páginas próprias quando eu quiser consultar tudo.</p>
-        </aside>
       </section>
 
       <section className="home-section tools-section" id="ferramentas" aria-labelledby="tools-title">
@@ -44,15 +38,6 @@ export default function Home() {
         <div className="tools-grid">
           <article className="tool-card"><div className="tool-topline"><span>01</span><small>Calculadora</small></div><h3>Descongelamento do tempo da pandemia</h3><p>Simule a recontagem do período congelado para triênio, letra e sexta-parte do magistério de São Vicente.</p><div className="tool-tags"><span>Servidor ativo</span><span>Aposentado</span></div><a href="/ferramentas/descongelamento.html">Abrir calculadora →</a></article>
           <article className="tool-card"><div className="tool-topline"><span>02</span><small>Conferência</small></div><h3>Conferência de descontos</h3><p>Compare a lista enviada com o retorno da Prefeitura ou IPRESV e identifique diferenças de matrícula, nome e valor.</p><div className="tool-tags"><span>Excel</span><span>Word</span><span>PDF</span></div><a href="/ferramentas/conferencia-descontos.html">Abrir conferência →</a></article>
-        </div>
-      </section>
-
-      <section className="home-section quick-section" aria-labelledby="quick-title">
-        <div className="section-heading"><p className="eyebrow">Acessos rápidos</p><h2 id="quick-title">Abra o que você usa mais.</h2></div>
-        <div className="quick-grid">
-          <a href="https://www.saovicente.sp.gov.br/institucional/calendario" target="_blank" rel="noopener noreferrer"><span>Agenda municipal</span><strong>Calendário Oficial de São Vicente</strong><small>Abrir fonte oficial ↗</small></a>
-          <a href="/documentos/calendario-escolar-sao-vicente-2026.pdf" target="_blank" rel="noopener noreferrer"><span>SEDUC · BOM 584</span><strong>Calendário Escolar de São Vicente 2026</strong><small>Abrir documento ↗</small></a>
-          <a href="/agenda"><span>Cultura e eventos</span><strong>Agenda automática completa</strong><small>Explorar agenda →</small></a>
         </div>
       </section>
 

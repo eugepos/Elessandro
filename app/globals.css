@@ -14,7 +14,7 @@ a:focus-visible,button:focus-visible{outline:3px solid #f0b429;outline-offset:4p
 .site-header{position:relative;display:flex;min-height:76px;align-items:center;justify-content:space-between;gap:24px}
 .brand{color:var(--blue);text-decoration:none}
 .brand span{display:block;font-size:1.18rem;font-weight:790;letter-spacing:-.045em}
-.brand small{display:block;margin-top:2px;color:#66798c;font-size:.64rem;font-weight:750;letter-spacing:.1em;text-transform:uppercase}
+.brand small{display:block;margin-top:2px;color:#66798c;font-size:.66rem;font-weight:680;letter-spacing:.025em}
 .main-nav{display:flex;align-items:center;gap:23px}
 .main-nav a{position:relative;color:var(--muted);font-size:.84rem;font-weight:650;text-decoration:none}
 .main-nav a:hover,.main-nav a.active{color:var(--blue)}
@@ -23,21 +23,8 @@ a:focus-visible,button:focus-visible{outline:3px solid #f0b429;outline-offset:4p
 .menu-button{display:none;width:44px;height:44px;align-items:center;justify-content:center;flex-direction:column;gap:7px;border:1px solid var(--border);border-radius:9px;background:var(--surface);cursor:pointer}
 .menu-button span{width:19px;height:1px;background:var(--blue)}
 
-.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);align-items:center;gap:clamp(36px,7vw,88px);padding:clamp(58px,7vw,82px) 0 72px}
-.hero-copy{max-width:700px}
 .eyebrow{margin:0 0 12px;color:var(--blue);font-size:.76rem;font-weight:820;letter-spacing:.1em;text-transform:uppercase}
-.hero h1,.page-hero h1,.section-heading h2,.listing-heading h2,.agenda-heading h2{margin:0;color:var(--blue-dark);font-weight:770;letter-spacing:-.055em}
-.hero h1{font-size:clamp(3.1rem,5.6vw,4.8rem);line-height:.98}
-.hero-copy>p:not(.eyebrow){max-width:650px;margin:22px 0 0;color:var(--muted);font-size:1.02rem;line-height:1.7}
-.hero-actions{display:flex;align-items:center;gap:18px;margin-top:28px}
-.primary-action{display:inline-flex;min-height:49px;align-items:center;border-radius:8px;padding:0 19px;background:var(--blue);color:#fff;font-size:.9rem;font-weight:760;text-decoration:none}
-.primary-action:hover{background:var(--blue-dark)}
-.secondary-action{color:var(--blue);font-size:.9rem;font-weight:760;text-decoration:none}
-.secondary-action:hover{text-decoration:underline}
-.purpose-card{border:1px solid var(--border);border-radius:14px;padding:27px;background:var(--surface);box-shadow:var(--shadow)}
-.purpose-card>span{color:var(--blue);font-size:.72rem;font-weight:820;letter-spacing:.1em;text-transform:uppercase}
-.purpose-card strong{display:block;margin-top:18px;color:var(--blue-dark);font-size:1.65rem;line-height:1.12;letter-spacing:-.04em}
-.purpose-card p{margin:15px 0 0;color:var(--muted);font-size:.92rem;line-height:1.65}
+.page-hero h1,.section-heading h2,.listing-heading h2,.agenda-heading h2{margin:0;color:var(--blue-dark);font-weight:770;letter-spacing:-.055em}
 
 .home-section,.listing-section{border-top:1px solid var(--border);padding:76px 0 84px}
 .section-heading{max-width:760px}
@@ -60,7 +47,10 @@ a:focus-visible,button:focus-visible{outline:3px solid #f0b429;outline-offset:4p
 .tool-card>a:hover{text-decoration:underline}
 
 .quick-section{padding-top:68px;padding-bottom:76px}
+.calendar-section{border-top:0;padding-top:48px}
+.calendar-heading h1{margin:0;color:var(--blue-dark);font-size:clamp(2.25rem,4vw,3.45rem);font-weight:770;line-height:1.03;letter-spacing:-.055em}
 .quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:32px}
+.calendar-grid{grid-template-columns:repeat(2,1fr)}
 .quick-grid a{display:flex;min-height:165px;flex-direction:column;border:1px solid var(--border);border-radius:12px;padding:20px;background:var(--surface);text-decoration:none;transition:transform .18s,border-color .18s}
 .quick-grid a:hover{transform:translateY(-3px);border-color:var(--blue)}
 .quick-grid span{color:var(--muted);font-size:.7rem;font-weight:720;text-transform:uppercase}
@@ -150,17 +140,16 @@ a:focus-visible,button:focus-visible{outline:3px solid #f0b429;outline-offset:4p
 .back-to-top:hover{background:var(--blue);color:#fff}
 
 @media(max-width:900px){
-  .main-nav{gap:16px}.main-nav a{font-size:.78rem}.hero{grid-template-columns:1fr}.purpose-card{max-width:650px}.latest-grid,.events-grid,.agenda-grid{grid-template-columns:1fr 1fr}.quick-grid{grid-template-columns:1fr 1fr}.about-grid{grid-template-columns:1fr}
+  .main-nav{gap:16px}.main-nav a{font-size:.78rem}.latest-grid,.events-grid,.agenda-grid{grid-template-columns:1fr 1fr}.quick-grid{grid-template-columns:1fr 1fr}.about-grid{grid-template-columns:1fr}
 }
 
 @media(max-width:680px){
-  html{scroll-padding-top:78px}.site-header,.hero,.home-section,.page-hero,.listing-section,.site-footer{width:min(100% - 28px,560px)}
+  html{scroll-padding-top:78px}.site-header,.home-section,.page-hero,.listing-section,.site-footer{width:min(100% - 28px,560px)}
   .site-header{min-height:68px}.brand span{font-size:1.08rem}.menu-button{display:flex}
   .main-nav{position:absolute;z-index:25;top:60px;right:0;left:0;display:none;align-items:stretch;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:11px;padding:7px;background:var(--surface);box-shadow:0 14px 32px rgba(35,57,79,.14)}
   .main-nav.is-open{display:flex}.main-nav a{padding:13px 12px;font-size:.9rem}.main-nav a.active::after{display:none}
-  .hero{gap:30px;padding:46px 0 56px}.hero h1{font-size:clamp(2.65rem,12vw,3.55rem)}.hero-copy>p:not(.eyebrow){font-size:.98rem;line-height:1.66}.hero-actions{align-items:stretch;flex-direction:column}.primary-action{justify-content:center}.secondary-action{text-align:center}
-  .purpose-card{padding:22px}.purpose-card strong{font-size:1.42rem}.purpose-card p{font-size:.92rem}
   .home-section,.listing-section{padding:60px 0 66px}.section-heading h2{font-size:clamp(2.15rem,10vw,2.9rem)}.section-heading>p:last-child,.row-heading>div>p:last-child{font-size:.94rem}
+  .calendar-section{padding-top:38px}.calendar-heading h1{font-size:clamp(2.15rem,10vw,2.9rem)}
   .row-heading,.listing-heading{align-items:flex-start;flex-direction:column;gap:18px}.section-link{margin:0}.listing-heading>span{align-self:flex-start}
   .tools-grid,.quick-grid,.latest-grid,.events-grid,.agenda-grid{grid-template-columns:1fr}.tool-card{min-height:0}.tool-card h3{font-size:1.35rem}.tool-card>p{font-size:.92rem}.tool-card>a{padding-top:22px}
   .quick-grid a{min-height:145px}.latest-card{min-height:0}.event-card{min-height:410px}.event-media{height:180px}.latest-card h3{font-size:1.08rem}.latest-card p,.event-card p{font-size:.9rem}.latest-card footer{align-items:flex-start;flex-direction:column}.event-card small{font-size:.78rem}

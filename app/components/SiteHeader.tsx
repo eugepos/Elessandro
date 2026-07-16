@@ -13,7 +13,7 @@ export default function SiteHeader({ active = "inicio" }: SiteHeaderProps) {
       <header className="site-header">
         <a className="brand" href="/" aria-label="Ir para a página inicial" onClick={closeMenu}>
           <span>Elessandro Eugênio</span>
-          <small>meu espaço</small>
+          <small>Meu espaço de trabalho e consulta</small>
         </a>
         <nav id="main-navigation" className={`main-nav ${menuOpen ? "is-open" : ""}`} aria-label="Navegação principal">
           <a className={active === "inicio" ? "active" : ""} href="/" onClick={closeMenu}>Início</a>

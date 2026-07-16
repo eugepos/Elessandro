@@ -14,12 +14,18 @@ async function render(path) {
   return response.text();
 }
 
-test("renders the compact home page with production metadata", async () => {
+test("renders the streamlined home page with calendars before tools", async () => {
   const html = await render("/");
   assert.match(html, /<title>Elessandro Eugênio — Meu espaço<\/title>/i);
-  assert.match(html, /Abrir ferramentas/i);
+  assert.match(html, /Meu espaço de trabalho e consulta/i);
+  assert.match(html, /Calendário Oficial de São Vicente/i);
+  assert.match(html, /Calendário Escolar de São Vicente 2026/i);
+  assert.ok(html.indexOf("Calendário Oficial de São Vicente") < html.indexOf("Resolva sem complicação"));
   assert.match(html, /Ver todas as notícias/i);
   assert.match(html, /Abrir agenda completa/i);
+  assert.doesNotMatch(html, /Ferramentas e informação para o meu dia a dia/i);
+  assert.doesNotMatch(html, /O essencial, sem excesso/i);
+  assert.doesNotMatch(html, /Agenda automática completa/i);
   assert.match(html, /<link[^>]+rel=["']canonical["'][^>]+href=["']https:\/\/elessandro\.com\.br\/?["']/i);
   assert.match(html, /<meta[^>]+property=["']og:image["'][^>]+content=["']https:\/\/elessandro\.com\.br\/og\.png["']/i);
   assert.doesNotMatch(html, /codex-preview/i);
